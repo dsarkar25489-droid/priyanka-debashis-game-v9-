@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>A Surprise for Priyanka ❤️</title>
+
+  <!-- WhatsApp / Facebook / social preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="🎁 Priyanka, a surprise is waiting for you ❤️" />
+  <meta property="og:description" content="Tap to open your special half-year anniversary surprise from Debashis." />
+  <meta property="og:url" content="https://dsarkar25489-droid.github.io/priyanka-debashis-game-v9-/share.html" />
+  <meta property="og:image" content="https://dsarkar25489-droid.github.io/priyanka-debashis-game-v9-/gift.png" />
+  <meta property="og:image:secure_url" content="https://dsarkar25489-droid.github.io/priyanka-debashis-game-v9-/gift.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1254" />
+  <meta property="og:image:height" content="1254" />
+
+  <!-- Extra preview metadata -->
+  <meta name="description" content="A special half-year anniversary surprise for Priyanka from Debashis." />
+  <meta name="theme-color" content="#7b0712" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(255, 192, 93, .22), transparent 34%),
+        linear-gradient(160deg, #300006 0%, #790b17 47%, #250004 100%);
+      color: #fff9e8;
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+      position: relative;
+      padding: 22px;
+    }
+
+    body::before,
+    body::after {
+      content: "♥";
+      position: fixed;
+      font-size: min(16vw, 130px);
+      color: rgba(255, 215, 120, .06);
+      pointer-events: none;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    body::before {
+      left: 3vw;
+      top: 9vh;
+    }
+
+    body::after {
+      right: 4vw;
+      bottom: 7vh;
+      animation-delay: -3s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(-8deg); }
+      50% { transform: translateY(-16px) rotate(8deg); }
+    }
+
+    .card {
+      width: min(94vw, 560px);
+      text-align: center;
+      padding: 22px 18px 28px;
+      border: 1px solid rgba(255, 222, 145, .38);
+      border-radius: 28px;
+      background: rgba(35, 0, 4, .38);
+      box-shadow:
+        0 24px 70px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .eyebrow {
+      margin: 3px 0 9px;
+      font-size: 13px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: #ffd889;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: clamp(26px, 7vw, 42px);
+      line-height: 1.06;
+      font-weight: 700;
+    }
+
+    .sub {
+      margin: 0 auto 18px;
+      max-width: 430px;
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,255,255,.82);
+    }
+
+    .gift-button {
+      width: min(100%, 430px);
+      border: 0;
+      padding: 0;
+      border-radius: 24px;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 45px rgba(0,0,0,.32);
+      transition: transform .2s ease, filter .2s ease;
+    }
+
+    .gift-button:active {
+      transform: scale(.975);
+    }
+
+    .gift-button:hover {
+      filter: brightness(1.05);
+    }
+
+    .gift-button img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .tap {
+      margin: 16px 0 3px;
+      font-family: system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      color: #ffe6a6;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: .72; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .from {
+      margin-top: 11px;
+      font-style: italic;
+      color: rgba(255,255,255,.72);
+      font-size: 14px;
+    }
+
+    .opening {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      z-index: 20;
+      background: radial-gradient(circle, #c8323d 0%, #650711 42%, #170002 100%);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .opening.show {
+      display: grid;
+      animation: reveal .45s ease both;
+    }
+
+    @keyframes reveal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .opening-inner {
+      animation: zoom .75s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    @keyframes zoom {
+      from { opacity: 0; transform: scale(.78); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .opening-heart {
+      font-size: 72px;
+      filter: drop-shadow(0 0 22px rgba(255,188,105,.6));
+    }
+
+    .opening h2 {
+      margin: 12px 0 4px;
+      font-size: clamp(27px, 8vw, 46px);
+    }
+
+    .opening p {
+      margin: 9px 0 0;
+      font-family: system-ui, sans-serif;
+      color: rgba(255,255,255,.82);
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <div class="eyebrow">For Priyanka</div>
+    <h1>A little surprise is waiting ❤️</h1>
+    <p class="sub">
+      Six beautiful months, one little adventure, and a lot of love.
+      Tap the gift to open your surprise.
+    </p>
+
+    <button class="gift-button" id="openGift" aria-label="Open anniversary surprise">
+      <img src="gift.png" alt="Click to open your surprise gift" />
+    </button>
+
+    <div class="tap">Tap the gift to open ✨</div>
+    <div class="from">With love, Debashis ❤️</div>
+  </main>
+
+  <section class="opening" id="opening">
+    <div class="opening-inner">
+      <div class="opening-heart">❤️</div>
+      <h2>Happy Half-Year Anniversary</h2>
+      <p>Opening our little adventure…</p>
+    </div>
+  </section>
+
+  <script>
+    const GAME_URL =
+      "https://dsarkar25489-droid.github.io/priyanka-debashis-game-v9-/";
+
+    document.getElementById("openGift").addEventListener("click", () => {
+      document.getElementById("opening").classList.add("show");
+
+      // Small reveal animation, then open the existing game.
+      setTimeout(() => {
+        window.location.href = GAME_URL;
+      }, 1400);
+    });
+  </script>
+</body>
+</html>
