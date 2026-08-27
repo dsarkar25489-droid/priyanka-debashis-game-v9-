@@ -2,15 +2,10 @@
   "use strict";
 
   // =========================================================
-  // PRIYANKA ♥ DEBASHIS
-  // FULL SINGLE-FILE GAME ENGINE
-  // Compatible with your existing index.html, style.css,
-  // audio.js and assets folder.
+  // PRIYANKA ♥ DEBASHIS — MARIO-STYLE PLATFORM VERSION
+  // Replace ONLY game.js. Existing HTML/CSS/audio/assets stay.
   // =========================================================
 
-  // -----------------------------
-  // DOM
-  // -----------------------------
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
 
@@ -35,9 +30,6 @@
   const fadeScreen = document.getElementById("fadeScreen");
   const soundButton = document.getElementById("soundButton");
 
-  // -----------------------------
-  // GAME STATE
-  // -----------------------------
   const MODE = {
     WAIT: "WAIT",
     MEETING: "MEETING",
@@ -52,50 +44,58 @@
 
   let mode = MODE.WAIT;
 
-  // -----------------------------
-  // CONFIG
-  // -----------------------------
   const CONFIG = {
     startDistance: 1120,
     reunionDistance: 78,
-    minimumDistance: 68,
-    maximumDistance: 1900,
+    minDistance: 68,
+    maxDistance: 1900,
 
     priyankaMaxHealth: 100,
     debashisMaxHearts: 3,
 
-    walkSpeed: 190,
-    runSpeed: 345,
-    jumpPower: 600,
-    gravity: 1580,
+    // Slower movement so the feet visually match the ground.
+    walkSpeed: 132,
+    runSpeed: 238,
 
-    heartSpeed: 620,
+    jumpPower: 590,
+    gravity: 1550,
+
+    heartSpeed: 600,
     heartCooldown: 0.30,
 
     priyankaHitPenalty: 68,
     debashisHitPenalty: 42,
 
-    maxActiveEnemies: 4,
-    waveMinEnemies: 2,
-    waveMaxEnemies: 5,
-    waveSpawnMin: 0.58,
-    waveSpawnMax: 1.05,
-    waveRestMin: 1.35,
-    waveRestMax: 2.45,
+    maxEnemies: 4,
 
-    enemyAttackChance: 0.42,
+    waveMin: 2,
+    waveMax: 5,
+
+    waveSpawnMin: 0.65,
+    waveSpawnMax: 1.10,
+
+    waveRestMin: 1.5,
+    waveRestMax: 2.5,
+
+    enemyAttackChance: 0.40,
     enemyAttackTravelTime: 1.15,
 
-    chunkWidth: 940,
+    chunkWidth: 900,
+
     chunksAhead: 5,
     chunksBehind: 2,
 
-    characterScale: 0.88
+    characterScale: 0.91,
+
+    // Camera dead-zone.
+    // Priyanka moves normally inside this area.
+    cameraLeftZone: 0.20,
+    cameraRightZone: 0.46,
+
+    // Keep some view ahead of Debashis.
+    cameraDebashisMax: 0.86
   };
 
-  // -----------------------------
-  // SPRITE ATLAS SETTINGS
-  // -----------------------------
   const PRIYANKA_CELL = {
     width: 200,
     height: 220
@@ -106,60 +106,119 @@
     height: 220
   };
 
-  /*
-  ============================================================
-  IMPORTANT
-
-  Your current character atlas uses:
-
-  row 0 = idle
-  row 1 = walk right
-  row 2 = walk left
-  row 3 = run LEFT
-  row 4 = run RIGHT
-  row 5 = jump
-  row 6 = celebration / emotion
-  row 7 = heart attack
-  ============================================================
-  */
+  // =========================================================
+  // CHARACTER ANIMATION
+  //
+  // IMPORTANT:
+  //
+  // We now use only ONE trusted source direction.
+  //
+  // walk row 1 = source facing right
+  // run row 4  = source facing right
+  //
+  // When moving LEFT we mirror the sprite.
+  //
+  // This prevents wrong-facing / backward animation.
+  // =========================================================
 
   const PRIYANKA_ANIMS = {
-    idle:   { row: 0, frames: 1, fps: 1 },
-    walkR:  { row: 1, frames: 7, fps: 8 },
-    walkL:  { row: 2, frames: 7, fps: 8 },
-    runR:   { row: 4, frames: 7, fps: 11 },
-    runL:   { row: 3, frames: 7, fps: 11 },
-    jump:   { row: 5, frames: 4, fps: 8 },
-    emote:  { row: 6, frames: 8, fps: 6 },
-    attack: { row: 7, frames: 3, fps: 11 }
+    idle: {
+      row: 0,
+      frames: 1,
+      fps: 1
+    },
+
+    walk: {
+      row: 1,
+      frames: 7,
+      fps: 8
+    },
+
+    run: {
+      row: 4,
+      frames: 7,
+      fps: 11
+    },
+
+    jump: {
+      row: 5,
+      frames: 4,
+      fps: 8
+    },
+
+    emote: {
+      row: 6,
+      frames: 8,
+      fps: 6
+    },
+
+    attack: {
+      row: 7,
+      frames: 3,
+      fps: 11
+    }
   };
 
   const DEBASHIS_ANIMS = {
-    idle:   { row: 0, frames: 1, fps: 1 },
-    walkR:  { row: 1, frames: 7, fps: 8 },
-    walkL:  { row: 2, frames: 7, fps: 8 },
-    runR:   { row: 4, frames: 7, fps: 11 },
-    runL:   { row: 3, frames: 7, fps: 11 },
-    jump:   { row: 5, frames: 4, fps: 8 },
-    emote:  { row: 6, frames: 8, fps: 6 },
-    attack: { row: 7, frames: 4, fps: 11 }
+    idle: {
+      row: 0,
+      frames: 1,
+      fps: 1
+    },
+
+    walk: {
+      row: 1,
+      frames: 7,
+      fps: 8
+    },
+
+    run: {
+      row: 4,
+      frames: 7,
+      fps: 11
+    },
+
+    jump: {
+      row: 5,
+      frames: 4,
+      fps: 8
+    },
+
+    emote: {
+      row: 6,
+      frames: 8,
+      fps: 6
+    },
+
+    attack: {
+      row: 7,
+      frames: 4,
+      fps: 11
+    }
   };
 
-  // -----------------------------
+  // =========================================================
   // IMAGES
-  // -----------------------------
+  // =========================================================
+
   const priyankaAtlas = new Image();
-  priyankaAtlas.src = "assets/priyanka_atlas.png";
+
+  priyankaAtlas.src =
+    "assets/priyanka_atlas.png";
+
 
   const debashisAtlas = new Image();
-  debashisAtlas.src = "assets/debashis_atlas.png";
+
+  debashisAtlas.src =
+    "assets/debashis_atlas.png";
+
 
   const environmentAtlas = new Image();
-  environmentAtlas.src = "assets/environment_atlas.png";
 
-  // -----------------------------
-  // ENVIRONMENT CROPS
-  // -----------------------------
+  environmentAtlas.src =
+    "assets/environment_atlas.png";
+
+
   const ENV = {
     sky: {
       x: 10,
@@ -173,13 +232,6 @@
       y: 252,
       w: 1028,
       h: 95
-    },
-
-    foreground: {
-      x: 10,
-      y: 373,
-      w: 1028,
-      h: 52
     },
 
     fountain: {
@@ -208,13 +260,6 @@
       y: 448,
       w: 180,
       h: 128
-    },
-
-    portal: {
-      x: 810,
-      y: 438,
-      w: 150,
-      h: 150
     },
 
     gazebo: {
@@ -281,6 +326,7 @@
     }
   };
 
+
   // =========================================================
   // CANVAS
   // =========================================================
@@ -289,28 +335,47 @@
   let H = 0;
   let DPR = 1;
 
+
   function resize() {
-    DPR = Math.min(
-      window.devicePixelRatio || 1,
-      2
-    );
 
-    W = window.innerWidth;
-    H = window.innerHeight;
+    DPR =
+      Math.min(
+        window.devicePixelRatio || 1,
+        2
+      );
 
-    canvas.width = Math.round(
-      W * DPR
-    );
 
-    canvas.height = Math.round(
-      H * DPR
-    );
+    W =
+      window.innerWidth;
+
+
+    H =
+      window.innerHeight;
+
+
+    canvas.width =
+      Math.round(
+        W *
+        DPR
+      );
+
+
+    canvas.height =
+      Math.round(
+        H *
+        DPR
+      );
+
 
     canvas.style.width =
-      W + "px";
+      W +
+      "px";
+
 
     canvas.style.height =
-      H + "px";
+      H +
+      "px";
+
 
     ctx.setTransform(
       DPR,
@@ -321,15 +386,19 @@
       0
     );
 
+
     updateSpeechBubblePosition();
   }
+
 
   window.addEventListener(
     "resize",
     resize
   );
 
+
   resize();
+
 
   // =========================================================
   // HELPERS
@@ -340,6 +409,7 @@
     min,
     max
   ) {
+
     return Math.max(
       min,
       Math.min(
@@ -349,217 +419,1118 @@
     );
   }
 
+
   function lerp(
     a,
     b,
     t
   ) {
-    return a + (b - a) * t;
+
+    return (
+      a +
+      (
+        b -
+        a
+      ) *
+      t
+    );
   }
+
 
   function randomRange(
     min,
     max
   ) {
-    return min +
+
+    return (
+      min +
       Math.random() *
-      (max - min);
-  }
-
-  function baseGroundY() {
-    return H * 0.80;
-  }
-
-  // =========================================================
-  // UNEVEN HILL / SLOPE TERRAIN
-  // =========================================================
-
-  const TERRAIN = {
-    longWave: 52,
-    midWave: 26,
-    shortWave: 9,
-
-    longFreq: 0.0027,
-    midFreq: 0.0066,
-    shortFreq: 0.0135
-  };
-
-  function terrainOffsetAtWorld(
-    worldX
-  ) {
-    /*
-    ----------------------------------------------------------
-    THREE TERRAIN WAVES
-
-    LONG WAVE
-    = big hills
-
-    MID WAVE
-    = normal slope changes
-
-    SHORT WAVE
-    = small uneven natural variation
-    ----------------------------------------------------------
-    */
-
-    return (
-      Math.sin(
-        worldX *
-        TERRAIN.longFreq
-      ) *
-      TERRAIN.longWave +
-
-      Math.sin(
-        worldX *
-        TERRAIN.midFreq +
-        1.35
-      ) *
-      TERRAIN.midWave +
-
-      Math.sin(
-        worldX *
-        TERRAIN.shortFreq +
-        2.25
-      ) *
-      TERRAIN.shortWave
-    );
-  }
-
-  function groundYAtWorld(
-    worldX
-  ) {
-    /*
-    Opening scene remains mostly flat.
-
-    When gameplay starts,
-    the real hill terrain begins.
-    */
-
-    if (
-      mode === MODE.WAIT ||
-      mode === MODE.MEETING ||
-      mode === MODE.DIALOGUE ||
-      mode === MODE.RUNAWAY
-    ) {
-      return baseGroundY();
-    }
-
-    return (
-      baseGroundY() -
-      terrainOffsetAtWorld(
-        worldX
+      (
+        max -
+        min
       )
     );
   }
 
-  function groundYAtScreenX(
-    screenX
-  ) {
-    return groundYAtWorld(
-      worldScroll +
-      screenX
+
+  function baseGroundY() {
+
+    return (
+      H *
+      0.80
     );
   }
 
+
+  function playSound(
+    name,
+    volume = 1
+  ) {
+
+    if (
+      window.gameAudio
+    ) {
+
+      gameAudio.play(
+        name,
+        volume
+      );
+    }
+  }
+
+
   // =========================================================
-  // CHARACTERS
+  // CAMERA
+  //
+  // CHARACTER IS NOT LOCKED TO CENTER.
+  //
+  // Priyanka moves naturally across the screen.
+  //
+  // Camera starts scrolling only when she moves outside
+  // a safe horizontal region.
   // =========================================================
 
-  const player = {
-    worldX: 0,
+  let cameraX =
+    0;
 
-    // Jump height above local hill.
-    y: 0,
 
-    vy: 0,
+  let targetCameraX =
+    0;
 
-    health:
-      CONFIG.priyankaMaxHealth,
 
-    grounded: true,
+  function worldToScreenX(
+    worldX
+  ) {
 
-    facing: 1,
+    return (
+      worldX -
+      cameraX
+    );
+  }
 
-    state: "idle",
 
-    animTime: 0,
+  function updateCamera(
+    dt
+  ) {
 
-    attacking: 0,
+    if (
+      mode !== MODE.CHASE &&
+      mode !== MODE.TOGETHER &&
+      mode !== MODE.GAME_OVER &&
+      mode !== MODE.CELEBRATION
+    ) {
 
-    attackCooldown: 0,
+      return;
+    }
 
-    invulnerable: 0
-  };
 
-  const debashis = {
-    y: 0,
+    const playerScreen =
+      player.x -
+      targetCameraX;
 
-    vy: 0,
 
-    hearts:
-      CONFIG.debashisMaxHearts,
+    const leftLimit =
+      W *
+      CONFIG.cameraLeftZone;
 
-    grounded: true,
 
-    facing: 1,
+    const rightLimit =
+      W *
+      CONFIG.cameraRightZone;
 
-    state: "idle",
 
-    animTime: 0,
+    const debashisMax =
+      W *
+      CONFIG.cameraDebashisMax;
 
-    attacking: 0
-  };
+
+    // Priyanka can move freely here.
+    if (
+      playerScreen >
+      rightLimit
+    ) {
+
+      targetCameraX +=
+        playerScreen -
+        rightLimit;
+    }
+
+
+    else if (
+      playerScreen <
+      leftLimit
+    ) {
+
+      targetCameraX +=
+        playerScreen -
+        leftLimit;
+    }
+
+
+    // Make sure Debashis and danger ahead remain visible.
+    const debScreen =
+      debashis.x -
+      targetCameraX;
+
+
+    if (
+      debScreen >
+      debashisMax
+    ) {
+
+      targetCameraX +=
+        debScreen -
+        debashisMax;
+    }
+
+
+    targetCameraX =
+      Math.max(
+        0,
+        targetCameraX
+      );
+
+
+    cameraX =
+      lerp(
+        cameraX,
+        targetCameraX,
+        clamp(
+          dt *
+          5,
+          0,
+          1
+        )
+      );
+  }
+
+
+  // =========================================================
+  // MARIO STYLE PROCEDURAL PLATFORMS
+  // =========================================================
+
+  const chunks =
+    new Map();
+
+
+  function platformY(
+    offset
+  ) {
+
+    return (
+      baseGroundY() +
+      offset
+    );
+  }
+
+
+  function seededRandom(
+    seed
+  ) {
+
+    const value =
+      Math.sin(
+        seed *
+        982.137
+      ) *
+      43758.5453;
+
+
+    return (
+      value -
+      Math.floor(
+        value
+      )
+    );
+  }
+
+
+  function createChunk(
+    index
+  ) {
+
+    const x0 =
+      index *
+      CONFIG.chunkWidth;
+
+
+    const seed =
+      seededRandom(
+        index +
+        11
+      );
+
+
+    let baseOffset =
+      Math.round(
+        Math.sin(
+          index *
+          0.72
+        ) *
+        55 /
+        10
+      ) *
+      10;
+
+
+    baseOffset =
+      clamp(
+        baseOffset,
+        -80,
+        65
+      );
+
+
+    // ---------------------------------------------------------
+    // FIRST AREA IS SAFE
+    // ---------------------------------------------------------
+
+    if (
+      index ===
+      0
+    ) {
+
+      return {
+
+        index,
+
+        platforms: [
+
+          {
+            x:
+              x0,
+
+            w:
+              CONFIG.chunkWidth,
+
+            offset:
+              0
+          }
+
+        ],
+
+        decorations: [
+
+          {
+            type:
+              "pinkTree",
+
+            x:
+              x0 +
+              690,
+
+            offset:
+              0,
+
+            scale:
+              0.72
+          }
+
+        ]
+      };
+    }
+
+
+    const template =
+      Math.floor(
+        seed *
+        6
+      );
+
+
+    let platforms;
+
+
+    // ========================================================
+    // TEMPLATE 1
+    //
+    // -----------      -------------------------
+    // ========================================================
+
+    if (
+      template ===
+      0
+    ) {
+
+      platforms = [
+
+        {
+          x:
+            x0,
+
+          w:
+            330,
+
+          offset:
+            baseOffset
+        },
+
+
+        {
+          x:
+            x0 +
+            410,
+
+          w:
+            490,
+
+          offset:
+            baseOffset
+        }
+
+      ];
+    }
+
+
+    // ========================================================
+    // TEMPLATE 2 — GOING UP
+    //
+    // _____
+    //
+    //          _____
+    //
+    //                    _______
+    // ========================================================
+
+    else if (
+      template ===
+      1
+    ) {
+
+      platforms = [
+
+        {
+          x:
+            x0,
+
+          w:
+            250,
+
+          offset:
+            baseOffset +
+            30
+        },
+
+
+        {
+          x:
+            x0 +
+            315,
+
+          w:
+            245,
+
+          offset:
+            baseOffset -
+            15
+        },
+
+
+        {
+          x:
+            x0 +
+            625,
+
+          w:
+            275,
+
+          offset:
+            baseOffset -
+            65
+        }
+
+      ];
+    }
+
+
+    // ========================================================
+    // TEMPLATE 3 — GOING DOWN
+    // ========================================================
+
+    else if (
+      template ===
+      2
+    ) {
+
+      platforms = [
+
+        {
+          x:
+            x0,
+
+          w:
+            260,
+
+          offset:
+            baseOffset -
+            60
+        },
+
+
+        {
+          x:
+            x0 +
+            330,
+
+          w:
+            250,
+
+          offset:
+            baseOffset -
+            15
+        },
+
+
+        {
+          x:
+            x0 +
+            650,
+
+          w:
+            250,
+
+          offset:
+            baseOffset +
+            35
+        }
+
+      ];
+    }
+
+
+    // ========================================================
+    // TEMPLATE 4 — SMALL ISLANDS
+    // ========================================================
+
+    else if (
+      template ===
+      3
+    ) {
+
+      platforms = [
+
+        {
+          x:
+            x0,
+
+          w:
+            210,
+
+          offset:
+            baseOffset +
+            10
+        },
+
+
+        {
+          x:
+            x0 +
+            270,
+
+          w:
+            170,
+
+          offset:
+            baseOffset -
+            65
+        },
+
+
+        {
+          x:
+            x0 +
+            510,
+
+          w:
+            150,
+
+          offset:
+            baseOffset -
+            20
+        },
+
+
+        {
+          x:
+            x0 +
+            725,
+
+          w:
+            175,
+
+          offset:
+            baseOffset -
+            75
+        }
+
+      ];
+    }
+
+
+    // ========================================================
+    // TEMPLATE 5 — RAISED CENTER
+    // ========================================================
+
+    else if (
+      template ===
+      4
+    ) {
+
+      platforms = [
+
+        {
+          x:
+            x0,
+
+          w:
+            290,
+
+          offset:
+            baseOffset
+        },
+
+
+        {
+          x:
+            x0 +
+            350,
+
+          w:
+            210,
+
+          offset:
+            baseOffset -
+            70
+        },
+
+
+        {
+          x:
+            x0 +
+            625,
+
+          w:
+            275,
+
+          offset:
+            baseOffset
+        }
+
+      ];
+    }
+
+
+    // ========================================================
+    // TEMPLATE 6 — STAIRS
+    // ========================================================
+
+    else {
+
+      platforms = [
+
+        {
+          x:
+            x0,
+
+          w:
+            190,
+
+          offset:
+            baseOffset +
+            35
+        },
+
+
+        {
+          x:
+            x0 +
+            230,
+
+          w:
+            190,
+
+          offset:
+            baseOffset
+        },
+
+
+        {
+          x:
+            x0 +
+            460,
+
+          w:
+            190,
+
+          offset:
+            baseOffset -
+            40
+        },
+
+
+        {
+          x:
+            x0 +
+            690,
+
+          w:
+            210,
+
+          offset:
+            baseOffset -
+            5
+        }
+
+      ];
+    }
+
+
+    const decorationTypes = [
+
+      "pinkTree",
+
+      "purpleTree",
+
+      "goldTree",
+
+      "flowerPatch",
+
+      "fountain",
+
+      "gazebo"
+
+    ];
+
+
+    const decorations =
+      [];
+
+
+    for (
+      let i =
+        0;
+
+      i <
+        platforms.length;
+
+      i++
+    ) {
+
+      const p =
+        platforms[
+          i
+        ];
+
+
+      if (
+        p.w <
+        180
+      ) {
+
+        continue;
+      }
+
+
+      if (
+        seededRandom(
+          index *
+          17 +
+          i *
+          9
+        ) <
+        0.56
+      ) {
+
+        decorations.push({
+
+          type:
+            decorationTypes[
+              Math.floor(
+                seededRandom(
+                  index *
+                  31 +
+                  i *
+                  7
+                ) *
+                decorationTypes.length
+              )
+            ],
+
+          x:
+            p.x +
+            p.w *
+            randomRange(
+              0.28,
+              0.72
+            ),
+
+          offset:
+            p.offset,
+
+          scale:
+            randomRange(
+              0.55,
+              0.78
+            )
+        });
+      }
+    }
+
+
+    return {
+
+      index,
+
+      platforms,
+
+      decorations
+    };
+  }
+
+
+  function maintainChunks() {
+
+    const focusX =
+      Math.max(
+        player.x,
+        debashis.x,
+        cameraX +
+        W
+      );
+
+
+    const center =
+      Math.floor(
+        focusX /
+        CONFIG.chunkWidth
+      );
+
+
+    for (
+      let i =
+        Math.max(
+          0,
+          center -
+          CONFIG.chunksBehind
+        );
+
+      i <=
+        center +
+        CONFIG.chunksAhead;
+
+      i++
+    ) {
+
+      if (
+        !chunks.has(
+          i
+        )
+      ) {
+
+        chunks.set(
+          i,
+          createChunk(
+            i
+          )
+        );
+      }
+    }
+
+
+    for (
+      const index
+      of [
+        ...chunks.keys()
+      ]
+    ) {
+
+      if (
+        index <
+        center -
+        CONFIG.chunksBehind -
+        3
+      ) {
+
+        chunks.delete(
+          index
+        );
+      }
+    }
+  }
+
+
+  function allActivePlatforms() {
+
+    const result =
+      [];
+
+
+    for (
+      const chunk
+      of chunks.values()
+    ) {
+
+      result.push(
+        ...chunk.platforms
+      );
+    }
+
+
+    return result;
+  }
+
+
+  function findPlatformAtX(
+    x
+  ) {
+
+    let best =
+      null;
+
+
+    for (
+      const p
+      of allActivePlatforms()
+    ) {
+
+      if (
+        x >=
+        p.x &&
+
+        x <=
+        p.x +
+        p.w
+      ) {
+
+        if (
+          !best ||
+
+          platformY(
+            p.offset
+          ) <
+          platformY(
+            best.offset
+          )
+        ) {
+
+          best =
+            p;
+        }
+      }
+    }
+
+
+    return best;
+  }
+
+
+  function findLandingPlatform(
+    x,
+    previousY,
+    newY
+  ) {
+
+    let best =
+      null;
+
+
+    let bestY =
+      Infinity;
+
+
+    for (
+      const p
+      of allActivePlatforms()
+    ) {
+
+      if (
+        x <
+        p.x ||
+
+        x >
+        p.x +
+        p.w
+      ) {
+
+        continue;
+      }
+
+
+      const y =
+        platformY(
+          p.offset
+        );
+
+
+      if (
+        previousY <=
+        y +
+        2 &&
+
+        newY >=
+        y
+      ) {
+
+        if (
+          y <
+          bestY
+        ) {
+
+          bestY =
+            y;
+
+
+          best =
+            p;
+        }
+      }
+    }
+
+
+    return best;
+  }
+
+
+  function nearestPlatform(
+    x,
+    maximumDistance = 220
+  ) {
+
+    let best =
+      null;
+
+
+    let bestDistance =
+      Infinity;
+
+
+    for (
+      const p
+      of allActivePlatforms()
+    ) {
+
+      const candidateX =
+        clamp(
+          x,
+          p.x +
+          28,
+          p.x +
+          p.w -
+          28
+        );
+
+
+      const distance =
+        Math.abs(
+          candidateX -
+          x
+        );
+
+
+      if (
+        distance <
+        bestDistance &&
+
+        distance <=
+        maximumDistance
+      ) {
+
+        bestDistance =
+          distance;
+
+
+        best = {
+
+          platform:
+            p,
+
+          x:
+            candidateX
+        };
+      }
+    }
+
+
+    return best;
+  }
+
+
+  // =========================================================
+  // CHARACTER DATA
+  // =========================================================
+
+  function createCharacter() {
+
+    return {
+
+      x:
+        0,
+
+      y:
+        baseGroundY(),
+
+      previousY:
+        baseGroundY(),
+
+      vy:
+        0,
+
+      grounded:
+        true,
+
+      facing:
+        1,
+
+      state:
+        "idle",
+
+      animTime:
+        0,
+
+      // IMPORTANT:
+      // animation is linked to distance moved.
+      animDistance:
+        0,
+
+      attacking:
+        0,
+
+      attackCooldown:
+        0,
+
+      invulnerable:
+        0
+    };
+  }
+
+
+  const player =
+    createCharacter();
+
+
+  player.health =
+    CONFIG.priyankaMaxHealth;
+
+
+  const debashis =
+    createCharacter();
+
+
+  debashis.hearts =
+    CONFIG.debashisMaxHearts;
+
 
   let relationshipDistance =
     CONFIG.startDistance;
 
-  let worldScroll = 0;
 
-  let time = 0;
+  function desiredPhysicalGap() {
 
-  let celebrationTime = 0;
-
-  let messageTimer = 0;
-
-  // =========================================================
-  // CAMERA ZOOM
-  // =========================================================
-
-  let cameraZoom = 1.0;
-
-  function getTargetCameraZoom() {
-    /*
-    When Priyanka runs away:
-    camera zooms OUT.
-
-    During gameplay:
-    farther apart = zoomed out
-    closer together = zoomed in
-    */
-
-    if (
-      mode === MODE.RUNAWAY
-    ) {
-      const t = clamp(
-        meeting.phaseTime / 3.8,
-        0,
-        1
-      );
-
-      return lerp(
-        1.0,
-        0.70,
-        t
-      );
-    }
-
-    if (
-      mode === MODE.CHASE
-    ) {
-      const closeness = clamp(
+    const far =
+      clamp(
         (
-          CONFIG.startDistance -
-          relationshipDistance
+          relationshipDistance -
+          CONFIG.reunionDistance
         ) /
         (
           CONFIG.startDistance -
@@ -569,87 +1540,48 @@
         1
       );
 
-      return lerp(
-        0.70,
-        1.06,
-        closeness
-      );
-    }
 
-    if (
-      mode === MODE.TOGETHER ||
-      mode === MODE.CELEBRATION
-    ) {
-      return 1.04;
-    }
+    return lerp(
 
-    return 1.0;
-  }
+      Math.max(
+        150,
+        W *
+        0.20
+      ),
 
-  function updateCameraZoom(
-    dt
-  ) {
-    cameraZoom = lerp(
-      cameraZoom,
-      getTargetCameraZoom(),
-      clamp(
-        dt * 2.6,
-        0,
-        1
-      )
+      Math.max(
+        360,
+        W *
+        0.48
+      ),
+
+      far
     );
   }
 
-  // =========================================================
-  // INPUT
-  // =========================================================
-
-  const keys = {
-    left: false,
-    right: false,
-    run: false
-  };
 
   // =========================================================
-  // WORLD OBJECTS
-  // =========================================================
-
-  const enemies = [];
-
-  const heartShots = [];
-
-  const incomingAttacks = [];
-
-  const groundHazards = [];
-
-  const particles = [];
-
-  const chunks =
-    new Map();
-
-  let waveRemaining = 0;
-
-  let waveSpawnTimer = 0;
-
-  let waveRestTimer = 0.8;
-
-  let groundHazardTimer = 4.4;
-
-  // =========================================================
-  // OPENING STORY DATA
+  // STORY
   // =========================================================
 
   const meeting = {
-    priyankaX: 0,
 
-    debashisX: 0,
+    priyankaX:
+      0,
 
-    targetDebashisX: 0,
+    debashisX:
+      0,
 
-    phaseTime: 0
+    targetDebashisX:
+      0,
+
+    phaseTime:
+      0
   };
 
+
   const dialogueSequence = [
+
     {
       speaker:
         "DEBASHIS",
@@ -666,6 +1598,7 @@
       sound:
         "dialogueDebashis"
     },
+
 
     {
       speaker:
@@ -684,6 +1617,7 @@
         "dialoguePriyanka"
     },
 
+
     {
       speaker:
         "DEBASHIS",
@@ -700,6 +1634,7 @@
       sound:
         "dialogueDebashis"
     },
+
 
     {
       speaker:
@@ -718,6 +1653,7 @@
         "dialoguePriyanka"
     },
 
+
     {
       speaker:
         "DEBASHIS",
@@ -735,6 +1671,7 @@
         "dialogueDebashis"
     },
 
+
     {
       speaker:
         "PRIYANKA",
@@ -751,18 +1688,87 @@
       sound:
         "dialoguePriyanka"
     }
+
   ];
 
-  let dialogueIndex = -1;
 
-  let dialogueTimer = 0;
+  let dialogueIndex =
+    -1;
+
+
+  let dialogueTimer =
+    0;
+
 
   // =========================================================
-  // ENEMY DEFINITIONS
+  // WORLD OBJECTS
+  // =========================================================
+
+  const enemies =
+    [];
+
+
+  const heartShots =
+    [];
+
+
+  const incomingAttacks =
+    [];
+
+
+  const hazards =
+    [];
+
+
+  const particles =
+    [];
+
+
+  let waveRemaining =
+    0;
+
+
+  let waveSpawnTimer =
+    0;
+
+
+  let waveRestTimer =
+    0.8;
+
+
+  let hazardTimer =
+    4.0;
+
+
+  let messageTimer =
+    0;
+
+
+  let gameTime =
+    0;
+
+
+  const keys = {
+
+    left:
+      false,
+
+    right:
+      false,
+
+    run:
+      false
+  };
+
+
+  // =========================================================
+  // ENEMIES
   // =========================================================
 
   const ENEMY_TYPES = {
+
     shadow: {
+
       crop:
         ENV.enemyShadow,
 
@@ -770,13 +1776,13 @@
         1,
 
       speed:
-        98,
+        85,
 
       reward:
         27,
 
       scale:
-        0.78,
+        0.82,
 
       flying:
         false,
@@ -785,7 +1791,9 @@
         false
     },
 
+
     bat: {
+
       crop:
         ENV.enemyBat,
 
@@ -793,13 +1801,13 @@
         1,
 
       speed:
-        128,
+        112,
 
       reward:
         31,
 
       scale:
-        0.82,
+        0.84,
 
       flying:
         true,
@@ -808,7 +1816,9 @@
         false
     },
 
+
     thorn: {
+
       crop:
         ENV.enemyThorn,
 
@@ -816,13 +1826,13 @@
         2,
 
       speed:
-        82,
+        72,
 
       reward:
         42,
 
       scale:
-        0.82,
+        0.85,
 
       flying:
         false,
@@ -831,7 +1841,9 @@
         false
     },
 
+
     knight: {
+
       crop:
         ENV.enemyKnight,
 
@@ -839,13 +1851,13 @@
         3,
 
       speed:
-        69,
+        62,
 
       reward:
         55,
 
       scale:
-        0.86,
+        0.88,
 
       flying:
         false,
@@ -854,7 +1866,9 @@
         true
     },
 
+
     dragon: {
+
       crop:
         ENV.enemyDragon,
 
@@ -862,13 +1876,13 @@
         4,
 
       speed:
-        86,
+        78,
 
       reward:
         72,
 
       scale:
-        0.88,
+        0.90,
 
       flying:
         true,
@@ -878,151 +1892,6 @@
     }
   };
 
-  // =========================================================
-  // PROCEDURAL WORLD
-  // =========================================================
-
-  function seededRandom(
-    seed
-  ) {
-    const x =
-      Math.sin(
-        seed * 999.91
-      ) *
-      43758.5453;
-
-    return (
-      x -
-      Math.floor(x)
-    );
-  }
-
-  function createChunk(
-    index
-  ) {
-    const types = [
-      "pinkTree",
-      "fountain",
-      "purpleTree",
-      "goldTree",
-      "flowerPatch",
-      "windmill",
-      "bridge",
-      "gazebo"
-    ];
-
-    const objects = [];
-
-    const count =
-      2 +
-      Math.floor(
-        seededRandom(
-          index + 2
-        ) *
-        3
-      );
-
-    for (
-      let i = 0;
-      i < count;
-      i++
-    ) {
-      const r =
-        seededRandom(
-          index * 20 +
-          i * 7.37
-        );
-
-      const type =
-        types[
-          Math.floor(
-            r *
-            types.length
-          )
-        ];
-
-      objects.push({
-        type,
-
-        x:
-          index *
-          CONFIG.chunkWidth +
-          120 +
-          seededRandom(
-            index * 40 +
-            i * 5.9
-          ) *
-          (
-            CONFIG.chunkWidth -
-            240
-          ),
-
-        scale:
-          0.54 +
-          seededRandom(
-            index * 70 +
-            i
-          ) *
-          0.48
-      });
-    }
-
-    return {
-      index,
-      objects
-    };
-  }
-
-  function maintainChunks() {
-    const center =
-      Math.floor(
-        worldScroll /
-        CONFIG.chunkWidth
-      );
-
-    for (
-      let i =
-        center -
-        CONFIG.chunksBehind;
-
-      i <=
-        center +
-        CONFIG.chunksAhead;
-
-      i++
-    ) {
-      if (
-        i < 0
-      ) {
-        continue;
-      }
-
-      if (
-        !chunks.has(i)
-      ) {
-        chunks.set(
-          i,
-          createChunk(i)
-        );
-      }
-    }
-
-    for (
-      const index
-      of chunks.keys()
-    ) {
-      if (
-        index <
-        center -
-        CONFIG.chunksBehind -
-        1
-      ) {
-        chunks.delete(
-          index
-        );
-      }
-    }
-  }
 
   // =========================================================
   // UI
@@ -1032,39 +1901,41 @@
     text,
     duration = 1.4
   ) {
+
     gameMessage.textContent =
       text;
 
-    gameMessage
-      .classList
-      .add(
-        "show"
-      );
+
+    gameMessage.classList.add(
+      "show"
+    );
+
 
     messageTimer =
       duration;
   }
 
+
   function hideMessage() {
-    gameMessage
-      .classList
-      .remove(
-        "show"
-      );
+
+    gameMessage.classList.remove(
+      "show"
+    );
   }
 
+
   function updateHud() {
-    const hp =
+
+    healthElement.style.width =
       clamp(
         player.health /
         CONFIG.priyankaMaxHealth,
         0,
         1
-      );
-
-    healthElement.style.width =
-      hp * 100 +
+      ) *
+      100 +
       "%";
+
 
     heartsElement
       .querySelectorAll(
@@ -1075,6 +1946,7 @@
           node,
           index
         ) => {
+
           node.classList.toggle(
             "lost",
             index >=
@@ -1082,6 +1954,7 @@
           );
         }
       );
+
 
     const progress =
       clamp(
@@ -1097,93 +1970,41 @@
         1
       );
 
+
     progressFill.style.width =
-      progress * 100 +
+      progress *
+      100 +
       "%";
   }
 
-  // =========================================================
-  // CHARACTER SCREEN POSITIONS
-  // =========================================================
-
-  function chaseSeparation() {
-    const t =
-      clamp(
-        (
-          relationshipDistance -
-          CONFIG.reunionDistance
-        ) /
-        (
-          CONFIG.startDistance -
-          CONFIG.reunionDistance
-        ),
-        0,
-        1
-      );
-
-    return lerp(
-      W * 0.12,
-      W * 0.50,
-      t
-    );
-  }
-
-  function getCharacterScreenPositions() {
-    /*
-    TOGETHER MODE
-
-    Debashis behind
-    Priyanka in front
-    */
-
-    if (
-      mode === MODE.TOGETHER
-    ) {
-      return {
-        priyanka:
-          W * 0.60,
-
-        debashis:
-          W * 0.43
-      };
-    }
-
-    return {
-      priyanka:
-        W * 0.14,
-
-      debashis:
-        W * 0.14 +
-        chaseSeparation()
-    };
-  }
-
-  // =========================================================
-  // SPEECH BUBBLE
-  // =========================================================
 
   function updateSpeechBubblePosition() {
+
     if (
       !speechBubble ||
-      speechBubble
-        .classList
-        .contains(
-          "hidden"
-        )
+
+      speechBubble.classList.contains(
+        "hidden"
+      )
     ) {
+
       return;
     }
+
 
     const item =
       dialogueSequence[
         dialogueIndex
       ];
 
+
     if (
       !item
     ) {
+
       return;
     }
+
 
     const x =
       item.speaker ===
@@ -1193,285 +2014,1210 @@
         :
         meeting.debashisX;
 
+
     speechBubble.style.left =
-      x + "px";
+      x +
+      "px";
+
 
     speechBubble.style.top =
       (
         baseGroundY() -
-        155
+        158
       ) +
       "px";
   }
+
 
   function setSpeechOpacity(
     value,
     seconds = 0
   ) {
+
     speechBubble.style.transition =
-      seconds > 0
+      seconds >
+      0
         ?
         `opacity ${seconds}s ease`
         :
         "none";
 
+
     speechBubble.style.opacity =
-      String(value);
+      String(
+        value
+      );
   }
 
+
   // =========================================================
-  // ACTIONS
+  // STORY CONTROL
   // =========================================================
 
-  function setMirroredState(
-    state
-  ) {
+  function startStory() {
+
+    startOverlay.classList.add(
+      "hidden"
+    );
+
+
+    mode =
+      MODE.MEETING;
+
+
+    meeting.priyankaX =
+      W *
+      0.30;
+
+
+    meeting.debashisX =
+      W *
+      0.79;
+
+
+    meeting.targetDebashisX =
+      W *
+      0.60;
+
+
+    meeting.phaseTime =
+      0;
+
+
     player.state =
-      state;
+      "idle";
+
+
+    player.facing =
+      1;
+
 
     debashis.state =
-      state;
-  }
+      "walk";
 
-  function jump() {
-    if (
-      mode !== MODE.CHASE &&
-      mode !== MODE.TOGETHER
-    ) {
-      return;
-    }
 
-    if (
-      !player.grounded
-    ) {
-      return;
-    }
+    debashis.facing =
+      -1;
 
-    player.vy =
-      CONFIG.jumpPower;
-
-    debashis.vy =
-      CONFIG.jumpPower;
-
-    player.grounded =
-      false;
-
-    debashis.grounded =
-      false;
 
     if (
       window.gameAudio
     ) {
-      gameAudio.play(
-        "jump",
-        0.72
+
+      gameAudio.start();
+
+
+      playSound(
+        "ui",
+        0.5
       );
     }
   }
 
-  function fireHeart() {
+
+  function startDialogue() {
+
+    mode =
+      MODE.DIALOGUE;
+
+
+    player.state =
+      "idle";
+
+
+    player.facing =
+      1;
+
+
+    debashis.state =
+      "idle";
+
+
+    debashis.facing =
+      -1;
+
+
+    speechBubble.classList.remove(
+      "hidden"
+    );
+
+
+    dialogueIndex =
+      -1;
+
+
+    nextDialogue();
+  }
+
+
+  function nextDialogue() {
+
+    dialogueIndex++;
+
+
+    if (
+      dialogueIndex >=
+      dialogueSequence.length
+    ) {
+
+      speechBubble.classList.add(
+        "hidden"
+      );
+
+
+      setSpeechOpacity(
+        1,
+        0
+      );
+
+
+      mode =
+        MODE.RUNAWAY;
+
+
+      meeting.phaseTime =
+        0;
+
+
+      player.state =
+        "run";
+
+
+      // PRIYANKA FACES LEFT.
+      player.facing =
+        -1;
+
+
+      debashis.state =
+        "idle";
+
+
+      debashis.facing =
+        -1;
+
+
+      return;
+    }
+
+
+    const item =
+      dialogueSequence[
+        dialogueIndex
+      ];
+
+
+    speechName.textContent =
+      item.speaker;
+
+
+    speechText.textContent =
+      item.text;
+
+
+    dialogueTimer =
+      item.duration;
+
+
+    setSpeechOpacity(
+      1,
+      0
+    );
+
+
+    updateSpeechBubblePosition();
+
+
+    playSound(
+      item.sound,
+      0.62
+    );
+  }
+
+
+  function beginChase() {
+
+    mode =
+      MODE.CHASE;
+
+
+    relationshipDistance =
+      CONFIG.startDistance;
+
+
+    maintainChunks();
+
+
+    const startPlatform =
+      findPlatformAtX(
+        170
+      ) ||
+      createChunk(
+        0
+      ).platforms[
+        0
+      ];
+
+
+    player.x =
+      170;
+
+
+    player.y =
+      platformY(
+        startPlatform.offset
+      );
+
+
+    player.previousY =
+      player.y;
+
+
+    player.vy =
+      0;
+
+
+    player.grounded =
+      true;
+
+
+    player.state =
+      "idle";
+
+
+    player.facing =
+      1;
+
+
+    player.health =
+      CONFIG.priyankaMaxHealth;
+
+
+    player.animDistance =
+      0;
+
+
+    debashis.x =
+      player.x +
+      desiredPhysicalGap();
+
+
+    const safeDebashis =
+      nearestPlatform(
+        debashis.x,
+        250
+      );
+
+
+    if (
+      safeDebashis
+    ) {
+
+      debashis.x =
+        safeDebashis.x;
+
+
+      debashis.y =
+        platformY(
+          safeDebashis
+            .platform
+            .offset
+        );
+    }
+
+    else {
+
+      debashis.y =
+        player.y;
+    }
+
+
+    debashis.previousY =
+      debashis.y;
+
+
+    debashis.vy =
+      0;
+
+
+    debashis.grounded =
+      true;
+
+
+    debashis.state =
+      "idle";
+
+
+    debashis.facing =
+      1;
+
+
+    debashis.hearts =
+      CONFIG.debashisMaxHearts;
+
+
+    debashis.animDistance =
+      0;
+
+
+    cameraX =
+      0;
+
+
+    targetCameraX =
+      0;
+
+
+    hud.classList.remove(
+      "hidden"
+    );
+
+
+    mobileControls.classList.remove(
+      "hidden"
+    );
+
+
+    waveRemaining =
+      0;
+
+
+    waveRestTimer =
+      0.35;
+
+
+    hazardTimer =
+      3.2;
+
+
+    updateHud();
+
+
+    showMessage(
+      "Enemies are coming — protect Debashis ♥",
+      2.0
+    );
+  }
+
+
+  function updateStory(
+    dt
+  ) {
+
+    player.animTime +=
+      dt;
+
+
+    debashis.animTime +=
+      dt;
+
+
+    // ========================================================
+    // DEBASHIS APPROACHES PRIYANKA
+    // ========================================================
+
+    if (
+      mode ===
+      MODE.MEETING
+    ) {
+
+      meeting.phaseTime +=
+        dt;
+
+
+      meeting.debashisX -=
+        84 *
+        dt;
+
+
+      debashis.animDistance +=
+        84 *
+        dt;
+
+
+      if (
+        meeting.debashisX <=
+        meeting.targetDebashisX
+      ) {
+
+        meeting.debashisX =
+          meeting.targetDebashisX;
+
+
+        debashis.state =
+          "idle";
+
+
+        debashis.facing =
+          -1;
+
+
+        startDialogue();
+      }
+
+
+      return;
+    }
+
+
+    // ========================================================
+    // DIALOGUE
+    // ========================================================
+
+    if (
+      mode ===
+      MODE.DIALOGUE
+    ) {
+
+      player.state =
+        "idle";
+
+
+      player.facing =
+        1;
+
+
+      debashis.state =
+        "idle";
+
+
+      debashis.facing =
+        -1;
+
+
+      dialogueTimer -=
+        dt;
+
+
+      const item =
+        dialogueSequence[
+          dialogueIndex
+        ];
+
+
+      // Final two dialogue lines fade slowly.
+      if (
+        item &&
+        item.fade &&
+        dialogueTimer <=
+        1.0
+      ) {
+
+        setSpeechOpacity(
+          0,
+          0.95
+        );
+      }
+
+
+      updateSpeechBubblePosition();
+
+
+      if (
+        dialogueTimer <=
+        0
+      ) {
+
+        nextDialogue();
+      }
+
+
+      return;
+    }
+
+
+    // ========================================================
+    // PRIYANKA RUNS LEFT
+    // ========================================================
+
+    if (
+      mode ===
+      MODE.RUNAWAY
+    ) {
+
+      meeting.phaseTime +=
+        dt;
+
+
+      const dx =
+        -195 *
+        dt;
+
+
+      meeting.priyankaX =
+        Math.max(
+          W *
+          0.09,
+
+          meeting.priyankaX +
+          dx
+        );
+
+
+      player.animDistance +=
+        Math.abs(
+          dx
+        );
+
+
+      player.state =
+        "run";
+
+
+      player.facing =
+        -1;
+
+
+      debashis.state =
+        "idle";
+
+
+      debashis.facing =
+        -1;
+
+
+      if (
+        meeting.phaseTime >
+        3.7
+      ) {
+
+        beginChase();
+      }
+    }
+  }
+
+
+  // =========================================================
+  // PLATFORM PHYSICS
+  // =========================================================
+
+  function updateCharacterVertical(
+    character,
+    dt,
+    isPriyanka
+  ) {
+
+    character.previousY =
+      character.y;
+
+
+    // ========================================================
+    // CHECK IF STILL STANDING ON PLATFORM
+    // ========================================================
+
+    if (
+      character.grounded
+    ) {
+
+      const p =
+        findPlatformAtX(
+          character.x
+        );
+
+
+      if (
+        !p ||
+
+        Math.abs(
+          character.y -
+          platformY(
+            p.offset
+          )
+        ) >
+        5
+      ) {
+
+        character.grounded =
+          false;
+      }
+
+      else {
+
+        character.y =
+          platformY(
+            p.offset
+          );
+
+
+        character.vy =
+          0;
+      }
+    }
+
+
+    // ========================================================
+    // FALL / JUMP
+    // ========================================================
+
+    if (
+      !character.grounded
+    ) {
+
+      const oldY =
+        character.y;
+
+
+      character.vy +=
+        CONFIG.gravity *
+        dt;
+
+
+      character.y +=
+        character.vy *
+        dt;
+
+
+      // Landing only while moving downward.
+      if (
+        character.vy >=
+        0
+      ) {
+
+        const landed =
+          findLandingPlatform(
+            character.x,
+            oldY,
+            character.y
+          );
+
+
+        if (
+          landed
+        ) {
+
+          character.y =
+            platformY(
+              landed.offset
+            );
+
+
+          character.vy =
+            0;
+
+
+          character.grounded =
+            true;
+        }
+      }
+    }
+
+
+    // ========================================================
+    // FALLEN INTO A GAP
+    // ========================================================
+
+    if (
+      character.y >
+      H +
+      180
+    ) {
+
+      if (
+        isPriyanka
+      ) {
+
+        hurtPriyanka(
+          18,
+          true
+        );
+      }
+
+      else {
+
+        hurtDebashis(
+          true
+        );
+      }
+
+
+      recoverCharacter(
+        character,
+        isPriyanka
+      );
+    }
+  }
+
+
+  function recoverCharacter(
+    character,
+    isPriyanka
+  ) {
+
+    const safe =
+      nearestPlatform(
+        character.x -
+        30,
+        400
+      ) ||
+
+      nearestPlatform(
+        player.x,
+        500
+      );
+
+
+    if (
+      safe
+    ) {
+
+      character.x =
+        safe.x;
+
+
+      character.y =
+        platformY(
+          safe
+            .platform
+            .offset
+        );
+
+
+      character.previousY =
+        character.y;
+
+
+      character.vy =
+        0;
+
+
+      character.grounded =
+        true;
+    }
+
+    else {
+
+      character.x =
+        isPriyanka
+          ?
+          170
+          :
+          player.x +
+          250;
+
+
+      character.y =
+        baseGroundY();
+
+
+      character.previousY =
+        character.y;
+
+
+      character.vy =
+        0;
+
+
+      character.grounded =
+        true;
+    }
+  }
+
+
+  // =========================================================
+  // JUMP
+  // =========================================================
+
+  function jump() {
+
     if (
       mode !== MODE.CHASE &&
       mode !== MODE.TOGETHER
     ) {
+
       return;
     }
+
+
+    if (
+      !player.grounded
+    ) {
+
+      return;
+    }
+
+
+    player.vy =
+      -CONFIG.jumpPower;
+
+
+    debashis.vy =
+      -CONFIG.jumpPower;
+
+
+    player.grounded =
+      false;
+
+
+    debashis.grounded =
+      false;
+
+
+    player.state =
+      "jump";
+
+
+    debashis.state =
+      "jump";
+
+
+    playSound(
+      "jump",
+      0.72
+    );
+  }
+
+
+  // =========================================================
+  // MOVEMENT
+  //
+  // THIS FIXES THE SKATING EFFECT.
+  //
+  // Animation is advanced by DISTANCE TRAVELLED.
+  // =========================================================
+
+  function updateMovement(
+    dt
+  ) {
+
+    let direction =
+      0;
+
+
+    if (
+      keys.left
+    ) {
+
+      direction--;
+    }
+
+
+    if (
+      keys.right
+    ) {
+
+      direction++;
+    }
+
+
+    const speed =
+      keys.run
+        ?
+        CONFIG.runSpeed
+        :
+        CONFIG.walkSpeed;
+
+
+    const dx =
+      direction *
+      speed *
+      dt;
+
+
+    if (
+      direction !==
+      0
+    ) {
+
+      player.facing =
+        direction;
+
+
+      debashis.facing =
+        direction;
+
+
+      player.x =
+        Math.max(
+          18,
+          player.x +
+          dx
+        );
+
+
+      debashis.x =
+        Math.max(
+          player.x +
+          80,
+          debashis.x +
+          dx
+        );
+
+
+      // ======================================================
+      // FOOTSTEP SYNCHRONIZATION
+      // ======================================================
+
+      player.animDistance +=
+        Math.abs(
+          dx
+        );
+
+
+      debashis.animDistance +=
+        Math.abs(
+          dx
+        );
+
+
+      if (
+        player.grounded &&
+        player.attacking <=
+        0
+      ) {
+
+        player.state =
+          keys.run
+            ?
+            "run"
+            :
+            "walk";
+      }
+
+
+      if (
+        debashis.grounded &&
+        debashis.attacking <=
+        0
+      ) {
+
+        debashis.state =
+          keys.run
+            ?
+            "run"
+            :
+            "walk";
+      }
+    }
+
+    else {
+
+      if (
+        player.grounded &&
+        player.attacking <=
+        0
+      ) {
+
+        player.state =
+          "idle";
+      }
+
+
+      if (
+        debashis.grounded &&
+        debashis.attacking <=
+        0
+      ) {
+
+        debashis.state =
+          "idle";
+      }
+    }
+
+
+    if (
+      !player.grounded &&
+      player.attacking <=
+      0
+    ) {
+
+      player.state =
+        "jump";
+    }
+
+
+    if (
+      !debashis.grounded &&
+      debashis.attacking <=
+      0
+    ) {
+
+      debashis.state =
+        "jump";
+    }
+
+
+    // ========================================================
+    // RELATIONSHIP DISTANCE CORRECTION
+    //
+    // Slow instead of teleporting.
+    // ========================================================
+
+    const desiredX =
+      player.x +
+      desiredPhysicalGap();
+
+
+    const correction =
+      clamp(
+        desiredX -
+        debashis.x,
+
+        -42 *
+        dt,
+
+        42 *
+        dt
+      );
+
+
+    if (
+      debashis.grounded &&
+      Math.abs(
+        correction
+      ) >
+      0.01
+    ) {
+
+      const candidate =
+        debashis.x +
+        correction;
+
+
+      const platform =
+        findPlatformAtX(
+          candidate
+        );
+
+
+      if (
+        platform
+      ) {
+
+        debashis.x =
+          candidate;
+
+
+        debashis.y =
+          platformY(
+            platform.offset
+          );
+      }
+    }
+
+    else if (
+      !debashis.grounded
+    ) {
+
+      debashis.x +=
+        correction;
+    }
+  }
+
+
+  // =========================================================
+  // HEART FIRE
+  // =========================================================
+
+  function fireHeart() {
+
+    if (
+      mode !== MODE.CHASE &&
+      mode !== MODE.TOGETHER
+    ) {
+
+      return;
+    }
+
 
     if (
       player.attackCooldown >
       0
     ) {
+
       return;
     }
+
 
     player.attackCooldown =
       CONFIG.heartCooldown;
 
+
     player.attacking =
       0.26;
+
 
     debashis.attacking =
       0.26;
 
-    const positions =
-      getCharacterScreenPositions();
 
-    const pg =
-      groundYAtScreenX(
-        positions.priyanka
-      );
+    player.state =
+      "attack";
 
-    const dg =
-      groundYAtScreenX(
-        positions.debashis
-      );
+
+    debashis.state =
+      "attack";
+
 
     heartShots.push({
+
       owner:
         "priyanka",
 
       x:
-        positions.priyanka +
-        28,
+        player.x +
+        28 *
+        player.facing,
 
       y:
-        pg -
         player.y -
-        67 *
-        cameraZoom,
+        68,
 
       vx:
-        CONFIG.heartSpeed,
+        CONFIG.heartSpeed *
+        player.facing,
 
       life:
-        1.45
+        1.5
     });
 
+
     heartShots.push({
+
       owner:
         "debashis",
 
       x:
-        positions.debashis +
-        28,
+        debashis.x +
+        28 *
+        debashis.facing,
 
       y:
-        dg -
         debashis.y -
-        67 *
-        cameraZoom,
+        68,
 
       vx:
-        CONFIG.heartSpeed,
+        CONFIG.heartSpeed *
+        debashis.facing,
 
       life:
-        1.45
+        1.5
     });
 
-    spawnSparkles(
-      positions.debashis +
-      30,
 
-      dg -
-      68 *
-      cameraZoom,
+    spawnSparkles(
+      debashis.x,
+
+      debashis.y -
+      65,
 
       "#ff72b1",
 
-      10
+      9
     );
 
-    if (
-      window.gameAudio
-    ) {
-      gameAudio.play(
-        "heart",
-        0.72
-      );
-    }
-  }
 
-  // =========================================================
-  // DAMAGE
-  // =========================================================
-
-  function hurtPriyanka(
-    damage
-  ) {
-    if (
-      player.invulnerable >
-      0
-    ) {
-      return;
-    }
-
-    player.health =
-      Math.max(
-        0,
-        player.health -
-        damage
-      );
-
-    player.invulnerable =
-      0.86;
-
-    relationshipDistance =
-      clamp(
-        relationshipDistance +
-        CONFIG.priyankaHitPenalty,
-        CONFIG.minimumDistance,
-        CONFIG.maximumDistance
-      );
-
-    if (
-      window.gameAudio
-    ) {
-      gameAudio.play(
-        "playerHit",
-        0.76
-      );
-    }
-
-    showMessage(
-      "Priyanka was hurt — Debashis moved farther away",
-      1.5
+    playSound(
+      "heart",
+      0.72
     );
-
-    updateHud();
-
-    if (
-      player.health <=
-      0
-    ) {
-      triggerGameOver();
-    }
   }
 
-  function hurtDebashis() {
-    debashis.hearts =
-      Math.max(
-        0,
-        debashis.hearts -
-        1
-      );
-
-    relationshipDistance =
-      clamp(
-        relationshipDistance +
-        CONFIG.debashisHitPenalty,
-        CONFIG.minimumDistance,
-        CONFIG.maximumDistance
-      );
-
-    if (
-      window.gameAudio
-    ) {
-      gameAudio.play(
-        "debashisHit",
-        0.75
-      );
-    }
-
-    showMessage(
-      "Debashis was hit! Protect him!",
-      1.2
-    );
-
-    updateHud();
-
-    if (
-      debashis.hearts <=
-      0
-    ) {
-      triggerGameOver();
-    }
-  }
 
   // =========================================================
-  // ENEMY DIRECTOR
+  // ENEMY SYSTEM
   // =========================================================
 
   function currentProgress() {
+
     return clamp(
       (
         CONFIG.startDistance -
@@ -1486,30 +3232,38 @@
     );
   }
 
+
   function chooseEnemyType() {
+
     const progress =
       currentProgress();
+
 
     const roll =
       Math.random();
 
-    if (
-      progress >
-      0.68 &&
-      roll <
-      0.14
-    ) {
-      return "dragon";
-    }
 
     if (
       progress >
-      0.42 &&
+      0.70 &&
       roll <
-      0.35
+      0.14
     ) {
+
+      return "dragon";
+    }
+
+
+    if (
+      progress >
+      0.44 &&
+      roll <
+      0.34
+    ) {
+
       return "knight";
     }
+
 
     if (
       progress >
@@ -1517,77 +3271,109 @@
       roll <
       0.56
     ) {
+
       return "thorn";
     }
+
 
     if (
       roll <
       0.38
     ) {
+
       return "bat";
     }
+
 
     return "shadow";
   }
 
-  function startNewWave() {
-    const progress =
-      currentProgress();
-
-    const extra =
-      progress >
-      0.72
-        ?
-        1
-        :
-        0;
-
-    waveRemaining =
-      Math.floor(
-        randomRange(
-          CONFIG.waveMinEnemies,
-          CONFIG.waveMaxEnemies +
-          1 +
-          extra
-        )
-      );
-
-    waveSpawnTimer =
-      0.15;
-  }
 
   function spawnEnemy() {
-    if (
-      mode !== MODE.CHASE &&
-      mode !== MODE.TOGETHER
-    ) {
-      return false;
-    }
 
     if (
       enemies.length >=
-      CONFIG.maxActiveEnemies
+      CONFIG.maxEnemies
     ) {
+
       return false;
     }
 
+
     const type =
       chooseEnemyType();
+
 
     const def =
       ENEMY_TYPES[
         type
       ];
 
+
+    let x =
+      debashis.x +
+      randomRange(
+        240,
+        430
+      );
+
+
+    if (
+      !def.flying
+    ) {
+
+      const safe =
+        nearestPlatform(
+          x,
+          180
+        );
+
+
+      if (
+        !safe
+      ) {
+
+        return false;
+      }
+
+
+      x =
+        safe.x;
+    }
+
+
+    const p =
+      findPlatformAtX(
+        x
+      );
+
+
+    const y =
+      def.flying
+        ?
+        (
+          p
+            ?
+            platformY(
+              p.offset
+            )
+            :
+            baseGroundY()
+        ) -
+        100
+        :
+        platformY(
+          p.offset
+        );
+
+
     enemies.push({
+
       type,
 
-      relX:
-        W * 0.37 +
-        randomRange(
-          90,
-          190
-        ),
+      x,
+
+      y,
 
       hp:
         def.hp,
@@ -1603,8 +3389,8 @@
 
       attackTimer:
         randomRange(
-          1.0,
-          2.0
+          1,
+          2
         ),
 
       attacked:
@@ -1619,52 +3405,96 @@
         0
     });
 
+
     return true;
   }
+
+
+  function startNewWave() {
+
+    const extra =
+      currentProgress() >
+      0.72
+        ?
+        1
+        :
+        0;
+
+
+    waveRemaining =
+      Math.floor(
+        randomRange(
+          CONFIG.waveMin,
+          CONFIG.waveMax +
+          1 +
+          extra
+        )
+      );
+
+
+    waveSpawnTimer =
+      0.15;
+  }
+
 
   function updateEnemyDirector(
     dt
   ) {
+
     if (
       waveRemaining >
       0
     ) {
+
       waveSpawnTimer -=
         dt;
+
 
       if (
         waveSpawnTimer <=
         0
       ) {
+
         if (
           spawnEnemy()
         ) {
+
           waveRemaining--;
+
 
           waveSpawnTimer =
             randomRange(
               CONFIG.waveSpawnMin,
               CONFIG.waveSpawnMax
             );
-        } else {
+        }
+
+        else {
+
           waveSpawnTimer =
-            0.25;
+            0.28;
         }
       }
+
 
       return;
     }
 
+
     waveRestTimer -=
       dt;
+
 
     if (
       waveRestTimer <=
       0 &&
+
       enemies.length <=
       1
     ) {
+
       startNewWave();
+
 
       waveRestTimer =
         randomRange(
@@ -1674,30 +3504,518 @@
     }
   }
 
-  // =========================================================
-  // GROUND HAZARD
-  // =========================================================
 
-  function spawnGroundHazard() {
-    if (
-      mode !==
-      MODE.CHASE
+  function getEnemyGround(
+    enemy
+  ) {
+
+    const platform =
+      findPlatformAtX(
+        enemy.x
+      );
+
+
+    return platform
+      ?
+      platformY(
+        platform.offset
+      )
+      :
+      baseGroundY();
+  }
+
+
+  function updateEnemies(
+    dt
+  ) {
+
+    for (
+      let i =
+        enemies.length -
+        1;
+
+      i >=
+        0;
+
+      i--
     ) {
+
+      const enemy =
+        enemies[
+          i
+        ];
+
+
+      const def =
+        ENEMY_TYPES[
+          enemy.type
+        ];
+
+
+      enemy.flash =
+        Math.max(
+          0,
+          enemy.flash -
+          dt
+        );
+
+
+      enemy.attackTimer -=
+        dt;
+
+
+      enemy.x -=
+        enemy.speed *
+        dt;
+
+
+      if (
+        def.flying
+      ) {
+
+        enemy.y =
+          getEnemyGround(
+            enemy
+          ) -
+          95 +
+          Math.sin(
+            gameTime *
+            4 +
+            enemy.bob
+          ) *
+          12;
+      }
+
+      else {
+
+        const p =
+          findPlatformAtX(
+            enemy.x
+          );
+
+
+        if (
+          p
+        ) {
+
+          enemy.y =
+            platformY(
+              p.offset
+            );
+        }
+      }
+
+
+      if (
+        def.ranged &&
+
+        !enemy.attacked &&
+
+        enemy.attackTimer <=
+        0 &&
+
+        enemy.x -
+        debashis.x <
+        260 &&
+
+        Math.random() <
+        CONFIG.enemyAttackChance
+      ) {
+
+        enemy.attacked =
+          true;
+
+
+        incomingAttacks.push({
+
+          startX:
+            enemy.x,
+
+          startY:
+            enemy.y -
+            55,
+
+          endX:
+            player.x,
+
+          endY:
+            player.y -
+            55,
+
+          life:
+            CONFIG.enemyAttackTravelTime,
+
+          duration:
+            CONFIG.enemyAttackTravelTime,
+
+          checked:
+            false
+        });
+
+
+        showMessage(
+          "Jump!",
+          0.55
+        );
+      }
+
+
+      if (
+        Math.abs(
+          enemy.x -
+          debashis.x
+        ) <
+        34 &&
+
+        Math.abs(
+          enemy.y -
+          debashis.y
+        ) <
+        90
+      ) {
+
+        enemies.splice(
+          i,
+          1
+        );
+
+
+        hurtDebashis(
+          false
+        );
+      }
+    }
+  }
+
+
+  function updateHeartShots(
+    dt
+  ) {
+
+    for (
+      let i =
+        heartShots.length -
+        1;
+
+      i >=
+        0;
+
+      i--
+    ) {
+
+      const shot =
+        heartShots[
+          i
+        ];
+
+
+      shot.x +=
+        shot.vx *
+        dt;
+
+
+      shot.life -=
+        dt;
+
+
+      let hit =
+        false;
+
+
+      for (
+        let e =
+          enemies.length -
+          1;
+
+        e >=
+          0;
+
+        e--
+      ) {
+
+        const enemy =
+          enemies[
+            e
+          ];
+
+
+        if (
+          Math.abs(
+            shot.x -
+            enemy.x
+          ) <
+          44 &&
+
+          Math.abs(
+            shot.y -
+            (
+              enemy.y -
+              45
+            )
+          ) <
+          55
+        ) {
+
+          enemy.hp--;
+
+
+          enemy.flash =
+            0.12;
+
+
+          spawnSparkles(
+            enemy.x,
+            enemy.y -
+            45,
+            "#ff86b6",
+            8
+          );
+
+
+          heartShots.splice(
+            i,
+            1
+          );
+
+
+          hit =
+            true;
+
+
+          if (
+            enemy.hp <=
+            0
+          ) {
+
+            defeatEnemy(
+              e
+            );
+          }
+
+
+          break;
+        }
+      }
+
+
+      if (
+        !hit &&
+        shot.life <=
+        0
+      ) {
+
+        heartShots.splice(
+          i,
+          1
+        );
+      }
+    }
+  }
+
+
+  function defeatEnemy(
+    index
+  ) {
+
+    const enemy =
+      enemies[
+        index
+      ];
+
+
+    if (
+      !enemy
+    ) {
+
       return;
     }
 
-    groundHazards.push({
-      relX:
-        W * 0.53 +
-        randomRange(
-          70,
-          150
-        ),
 
-      speed:
-        randomRange(
-          105,
-          135
+    relationshipDistance =
+      clamp(
+        relationshipDistance -
+        enemy.reward,
+        CONFIG.minDistance,
+        CONFIG.maxDistance
+      );
+
+
+    spawnSparkles(
+      enemy.x,
+      enemy.y -
+      45,
+      "#ffd08c",
+      17
+    );
+
+
+    enemies.splice(
+      index,
+      1
+    );
+
+
+    playSound(
+      "enemyDefeat",
+      0.60
+    );
+
+
+    showMessage(
+      "♥ Closer",
+      0.65
+    );
+
+
+    updateHud();
+
+
+    if (
+      mode ===
+      MODE.CHASE &&
+
+      relationshipDistance <=
+      CONFIG.reunionDistance
+    ) {
+
+      beginReunion();
+    }
+  }
+
+
+  // =========================================================
+  // ATTACKS
+  // =========================================================
+
+  function updateIncomingAttacks(
+    dt
+  ) {
+
+    for (
+      let i =
+        incomingAttacks.length -
+        1;
+
+      i >=
+        0;
+
+      i--
+    ) {
+
+      const attack =
+        incomingAttacks[
+          i
+        ];
+
+
+      attack.life -=
+        dt;
+
+
+      if (
+        attack.life <=
+        0 &&
+
+        !attack.checked
+      ) {
+
+        attack.checked =
+          true;
+
+
+        const currentPlatform =
+          findPlatformAtX(
+            player.x
+          );
+
+
+        const platformHeight =
+          currentPlatform
+            ?
+            platformY(
+              currentPlatform.offset
+            )
+            :
+            baseGroundY();
+
+
+        const avoided =
+          !player.grounded &&
+          player.y <
+          platformHeight -
+          35;
+
+
+        if (
+          !avoided
+        ) {
+
+          hurtPriyanka(
+            14,
+            false
+          );
+        }
+
+        else {
+
+          showMessage(
+            "Nice jump ♥",
+            0.62
+          );
+        }
+
+
+        incomingAttacks.splice(
+          i,
+          1
+        );
+      }
+    }
+  }
+
+
+  // =========================================================
+  // HAZARDS
+  // =========================================================
+
+  function spawnHazard() {
+
+    let x =
+      debashis.x +
+      randomRange(
+        190,
+        340
+      );
+
+
+    const safe =
+      nearestPlatform(
+        x,
+        160
+      );
+
+
+    if (
+      !safe
+    ) {
+
+      return;
+    }
+
+
+    x =
+      safe.x;
+
+
+    hazards.push({
+
+      x,
+
+      y:
+        platformY(
+          safe
+            .platform
+            .offset
         ),
 
       warning:
@@ -1705,110 +4023,201 @@
     });
   }
 
+
+  function updateHazards(
+    dt
+  ) {
+
+    for (
+      let i =
+        hazards.length -
+        1;
+
+      i >=
+        0;
+
+      i--
+    ) {
+
+      const hazard =
+        hazards[
+          i
+        ];
+
+
+      if (
+        !hazard.warning &&
+
+        hazard.x -
+        debashis.x <
+        135
+      ) {
+
+        hazard.warning =
+          true;
+
+
+        showMessage(
+          "Jump!",
+          0.60
+        );
+      }
+
+
+      if (
+        Math.abs(
+          hazard.x -
+          debashis.x
+        ) <
+        28
+      ) {
+
+        if (
+          debashis.grounded
+        ) {
+
+          hurtDebashis(
+            false
+          );
+        }
+
+        else {
+
+          showMessage(
+            "Saved ♥",
+            0.58
+          );
+        }
+
+
+        hazards.splice(
+          i,
+          1
+        );
+      }
+    }
+  }
+
+
   // =========================================================
-  // ENEMY DEFEAT
+  // DAMAGE
   // =========================================================
 
-  function defeatEnemy(
-    index
+  function hurtPriyanka(
+    damage,
+    fell
   ) {
-    const enemy =
-      enemies[
-        index
-      ];
 
     if (
-      !enemy
+      player.invulnerable >
+      0 &&
+
+      !fell
     ) {
+
       return;
     }
 
+
+    player.health =
+      Math.max(
+        0,
+        player.health -
+        damage
+      );
+
+
+    player.invulnerable =
+      0.85;
+
+
     relationshipDistance =
       clamp(
-        relationshipDistance -
-        enemy.reward,
-        CONFIG.minimumDistance,
-        CONFIG.maximumDistance
+        relationshipDistance +
+        CONFIG.priyankaHitPenalty,
+        CONFIG.minDistance,
+        CONFIG.maxDistance
       );
 
-    const positions =
-      getCharacterScreenPositions();
 
-    const x =
-      positions.debashis +
-      enemy.relX;
-
-    const def =
-      ENEMY_TYPES[
-        enemy.type
-      ];
-
-    const y =
-      getEnemyY(
-        enemy,
-        def,
-        x
-      );
-
-    spawnSparkles(
-      x,
-      y,
-      "#ffd08c",
-      18
+    playSound(
+      "playerHit",
+      0.75
     );
 
-    enemies.splice(
-      index,
-      1
-    );
-
-    if (
-      window.gameAudio
-    ) {
-      gameAudio.play(
-        "enemyDefeat",
-        0.60
-      );
-    }
 
     showMessage(
-      "♥ Closer",
-      0.65
+      fell
+        ?
+        "Priyanka fell — distance increased"
+        :
+        "Priyanka was hurt — distance increased",
+      1.35
     );
+
 
     updateHud();
 
+
     if (
-      mode === MODE.CHASE &&
-      relationshipDistance <=
-      CONFIG.reunionDistance
+      player.health <=
+      0
     ) {
-      beginReunion();
+
+      triggerGameOver();
     }
   }
 
-  function spawnIncomingAttack(
-    enemy
+
+  function hurtDebashis(
+    fell
   ) {
-    incomingAttacks.push({
-      life:
-        CONFIG.enemyAttackTravelTime,
 
-      duration:
-        CONFIG.enemyAttackTravelTime,
+    debashis.hearts =
+      Math.max(
+        0,
+        debashis.hearts -
+        1
+      );
 
-      sourceOffset:
-        enemy.relX,
 
-      checked:
-        false
-    });
+    relationshipDistance =
+      clamp(
+        relationshipDistance +
+        CONFIG.debashisHitPenalty,
+        CONFIG.minDistance,
+        CONFIG.maxDistance
+      );
+
+
+    playSound(
+      "debashisHit",
+      0.75
+    );
+
 
     showMessage(
-      "Jump!",
-      0.6
+      fell
+        ?
+        "Debashis fell!"
+        :
+        "Debashis was hit!",
+      1.15
     );
+
+
+    updateHud();
+
+
+    if (
+      debashis.hearts <=
+      0
+    ) {
+
+      triggerGameOver();
+    }
   }
+
 
   // =========================================================
   // PARTICLES
@@ -1820,13 +4229,21 @@
     color,
     count
   ) {
+
     for (
-      let i = 0;
-      i < count;
+      let i =
+        0;
+
+      i <
+        count;
+
       i++
     ) {
+
       particles.push({
+
         x,
+
         y,
 
         vx:
@@ -1844,11 +4261,11 @@
         life:
           randomRange(
             0.35,
-            0.8
+            0.85
           ),
 
         maxLife:
-          0.8,
+          0.85,
 
         size:
           randomRange(
@@ -1861,408 +4278,309 @@
     }
   }
 
-  // =========================================================
-  // STORY
-  // =========================================================
 
-  function startStory() {
-    startOverlay
-      .classList
-      .add(
-        "hidden"
-      );
+  function updateParticles(
+    dt
+  ) {
 
-    mode =
-      MODE.MEETING;
+    for (
+      let i =
+        particles.length -
+        1;
 
-    meeting.priyankaX =
-      W * 0.30;
-
-    meeting.debashisX =
-      W * 0.79;
-
-    meeting.targetDebashisX =
-      W * 0.61;
-
-    meeting.phaseTime =
-      0;
-
-    player.state =
-      "idle";
-
-    player.facing =
-      1;
-
-    debashis.state =
-      "walkL";
-
-    debashis.facing =
-      -1;
-
-    if (
-      window.gameAudio
-    ) {
-      gameAudio.start();
-
-      gameAudio.play(
-        "ui",
-        0.5
-      );
-    }
-  }
-
-  function startDialogue() {
-    mode =
-      MODE.DIALOGUE;
-
-    /*
-    Both characters are locked
-    facing each other.
-    */
-
-    player.state =
-      "idle";
-
-    player.facing =
-      1;
-
-    debashis.state =
-      "idle";
-
-    debashis.facing =
-      -1;
-
-    speechBubble
-      .classList
-      .remove(
-        "hidden"
-      );
-
-    dialogueIndex =
-      -1;
-
-    nextDialogue();
-  }
-
-  function nextDialogue() {
-    dialogueIndex++;
-
-    if (
-      dialogueIndex >=
-      dialogueSequence.length
-    ) {
-      speechBubble
-        .classList
-        .add(
-          "hidden"
-        );
-
-      setSpeechOpacity(
-        1,
-        0
-      );
-
-      mode =
-        MODE.RUNAWAY;
-
-      meeting.phaseTime =
+      i >=
         0;
 
-      /*
-      --------------------------------------------------------
-      IMPORTANT
-
-      Priyanka turns LEFT
-      and uses true LEFT-RUN animation.
-
-      No mirror is used here.
-      --------------------------------------------------------
-      */
-
-      player.facing =
-        -1;
-
-      player.state =
-        "runL";
-
-      debashis.facing =
-        -1;
-
-      debashis.state =
-        "idle";
-
-      return;
-    }
-
-    const item =
-      dialogueSequence[
-        dialogueIndex
-      ];
-
-    speechName.textContent =
-      item.speaker;
-
-    speechText.textContent =
-      item.text;
-
-    dialogueTimer =
-      item.duration;
-
-    setSpeechOpacity(
-      1,
-      0
-    );
-
-    updateSpeechBubblePosition();
-
-    if (
-      window.gameAudio
+      i--
     ) {
-      gameAudio.play(
-        item.sound,
-        0.62
-      );
+
+      const p =
+        particles[
+          i
+        ];
+
+
+      p.x +=
+        p.vx *
+        dt;
+
+
+      p.y +=
+        p.vy *
+        dt;
+
+
+      p.vy +=
+        45 *
+        dt;
+
+
+      p.life -=
+        dt;
+
+
+      if (
+        p.life <=
+        0
+      ) {
+
+        particles.splice(
+          i,
+          1
+        );
+      }
     }
   }
 
-  function updateDialogueFade() {
-    const item =
-      dialogueSequence[
-        dialogueIndex
-      ];
 
-    if (
-      !item ||
-      !item.fade
-    ) {
-      return;
-    }
+  // =========================================================
+  // GAMEPLAY UPDATE
+  // =========================================================
 
-    /*
-    The final two dialogue lines
-    stay for 3 seconds.
+  function updateGameplay(
+    dt
+  ) {
 
-    They remain fully visible first,
-    then fade slowly during final second.
-    */
+    maintainChunks();
 
-    if (
-      dialogueTimer <=
-      1.0 &&
-      speechBubble.style.opacity !==
-      "0"
-    ) {
-      setSpeechOpacity(
+
+    updateMovement(
+      dt
+    );
+
+
+    player.attackCooldown =
+      Math.max(
         0,
-        0.95
+        player.attackCooldown -
+        dt
       );
+
+
+    player.attacking =
+      Math.max(
+        0,
+        player.attacking -
+        dt
+      );
+
+
+    debashis.attacking =
+      Math.max(
+        0,
+        debashis.attacking -
+        dt
+      );
+
+
+    player.invulnerable =
+      Math.max(
+        0,
+        player.invulnerable -
+        dt
+      );
+
+
+    updateCharacterVertical(
+      player,
+      dt,
+      true
+    );
+
+
+    updateCharacterVertical(
+      debashis,
+      dt,
+      false
+    );
+
+
+    player.animTime +=
+      dt;
+
+
+    debashis.animTime +=
+      dt;
+
+
+    updateEnemyDirector(
+      dt
+    );
+
+
+    updateEnemies(
+      dt
+    );
+
+
+    updateHeartShots(
+      dt
+    );
+
+
+    updateIncomingAttacks(
+      dt
+    );
+
+
+    updateHazards(
+      dt
+    );
+
+
+    updateParticles(
+      dt
+    );
+
+
+    hazardTimer -=
+      dt;
+
+
+    if (
+      mode === MODE.CHASE &&
+
+      hazardTimer <=
+      0
+    ) {
+
+      spawnHazard();
+
+
+      hazardTimer =
+        randomRange(
+          5.2,
+          8.4
+        );
     }
-  }
 
-  function beginChase() {
-    mode =
-      MODE.CHASE;
 
-    relationshipDistance =
-      CONFIG.startDistance;
-
-    player.worldX =
-      0;
-
-    worldScroll =
-      0;
-
-    player.state =
-      "idle";
-
-    player.facing =
-      1;
-
-    player.y =
-      0;
-
-    player.vy =
-      0;
-
-    player.grounded =
-      true;
-
-    debashis.state =
-      "idle";
-
-    debashis.facing =
-      1;
-
-    debashis.y =
-      0;
-
-    debashis.vy =
-      0;
-
-    debashis.grounded =
-      true;
-
-    hud
-      .classList
-      .remove(
-        "hidden"
-      );
-
-    mobileControls
-      .classList
-      .remove(
-        "hidden"
-      );
-
-    waveRemaining =
-      0;
-
-    waveRestTimer =
-      0.30;
-
-    waveSpawnTimer =
-      0;
-
-    groundHazardTimer =
-      3.3;
-
-    updateHud();
-
-    showMessage(
-      "Priyanka sees danger near Debashis — protect him ♥",
-      2.1
+    updateCamera(
+      dt
     );
   }
+
 
   // =========================================================
   // GAME OVER
   // =========================================================
 
   function triggerGameOver() {
+
     mode =
       MODE.GAME_OVER;
 
-    mobileControls
-      .classList
-      .add(
-        "hidden"
-      );
 
-    gameOverOverlay
-      .classList
-      .remove(
-        "hidden"
-      );
+    mobileControls.classList.add(
+      "hidden"
+    );
+
+
+    gameOverOverlay.classList.remove(
+      "hidden"
+    );
   }
 
+
   function restartGameplay() {
-    enemies.length = 0;
 
-    heartShots.length = 0;
-
-    incomingAttacks.length = 0;
-
-    groundHazards.length = 0;
-
-    particles.length = 0;
-
-    player.health =
-      CONFIG.priyankaMaxHealth;
-
-    player.y =
+    enemies.length =
       0;
 
-    player.vy =
+
+    heartShots.length =
       0;
 
-    player.grounded =
-      true;
 
-    player.invulnerable =
+    incomingAttacks.length =
       0;
 
-    debashis.hearts =
-      CONFIG.debashisMaxHearts;
 
-    debashis.y =
+    hazards.length =
       0;
 
-    debashis.vy =
+
+    particles.length =
       0;
 
-    debashis.grounded =
-      true;
 
-    relationshipDistance =
-      CONFIG.startDistance;
+    gameOverOverlay.classList.add(
+      "hidden"
+    );
 
-    gameOverOverlay
-      .classList
-      .add(
-        "hidden"
-      );
 
     beginChase();
   }
+
 
   // =========================================================
   // REUNION
   // =========================================================
 
   function beginReunion() {
+
     if (
       mode !==
       MODE.CHASE
     ) {
+
       return;
     }
+
 
     mode =
       MODE.CELEBRATION;
 
+
     enemies.length =
       0;
+
 
     incomingAttacks.length =
       0;
 
-    groundHazards.length =
+
+    hazards.length =
       0;
 
-    mobileControls
-      .classList
-      .add(
-        "hidden"
-      );
+
+    mobileControls.classList.add(
+      "hidden"
+    );
+
 
     gameHint.textContent =
       "Together ♥";
 
-    celebrationTime =
-      0;
 
     player.state =
       "emote";
 
+
     debashis.state =
       "emote";
 
-    if (
-      window.gameAudio
-    ) {
-      gameAudio.play(
-        "celebration",
-        0.78
-      );
-    }
+
+    playSound(
+      "celebration",
+      0.78
+    );
+
 
     for (
-      let i = 0;
-      i < 90;
+      let i =
+        0;
+
+      i <
+        90;
+
       i++
     ) {
+
       particles.push({
+
         x:
+          cameraX +
           randomRange(
             0,
             W
@@ -2270,8 +4588,10 @@
 
         y:
           randomRange(
-            H * 0.06,
-            H * 0.58
+            H *
+            0.06,
+            H *
+            0.58
           ),
 
         vx:
@@ -2311,877 +4631,142 @@
       });
     }
 
+
     setTimeout(
       () => {
+
         if (
           mode ===
           MODE.CELEBRATION
         ) {
-          celebrationOverlay
-            .classList
-            .remove(
-              "hidden"
-            );
+
+          celebrationOverlay.classList.remove(
+            "hidden"
+          );
         }
+
       },
       1100
     );
   }
 
+
   function continueTogether() {
-    celebrationOverlay
-      .classList
-      .add(
-        "hidden"
-      );
+
+    celebrationOverlay.classList.add(
+      "hidden"
+    );
+
 
     mode =
       MODE.TOGETHER;
 
+
     relationshipDistance =
-      CONFIG.minimumDistance;
+      CONFIG.minDistance;
+
 
     player.health =
       CONFIG.priyankaMaxHealth;
 
+
     debashis.hearts =
       CONFIG.debashisMaxHearts;
+
 
     player.state =
       "idle";
 
+
     debashis.state =
       "idle";
 
-    hud
-      .classList
-      .remove(
-        "hidden"
-      );
 
-    mobileControls
-      .classList
-      .remove(
-        "hidden"
-      );
+    hud.classList.remove(
+      "hidden"
+    );
+
+
+    mobileControls.classList.remove(
+      "hidden"
+    );
+
 
     gameHint.textContent =
       "Together Forever ♥";
 
+
     waveRemaining =
       0;
 
+
     waveRestTimer =
-      0.6;
+      0.7;
+
 
     updateHud();
 
+
     showMessage(
-      "Now Priyanka leads and they fight together ♥",
-      2.2
+      "Now they continue together ♥",
+      2.0
     );
   }
 
+
   function closeStory() {
-    fadeScreen
-      .classList
-      .add(
-        "on"
-      );
+
+    fadeScreen.classList.add(
+      "on"
+    );
+
 
     setTimeout(
       () => {
-        celebrationOverlay
-          .classList
-          .add(
-            "hidden"
-          );
 
-        closedOverlay
-          .classList
-          .remove(
-            "hidden"
-          );
+        celebrationOverlay.classList.add(
+          "hidden"
+        );
 
-        fadeScreen
-          .classList
-          .remove(
-            "on"
-          );
+
+        closedOverlay.classList.remove(
+          "hidden"
+        );
+
+
+        fadeScreen.classList.remove(
+          "on"
+        );
+
 
         mode =
           MODE.CLOSED;
+
 
         if (
           window.gameAudio &&
           gameAudio.music
         ) {
+
           gameAudio.music.pause();
         }
 
+
         try {
+
           window.close();
+
         }
-        catch (_) {
-          /*
-          Browser may block
-          window.close().
-          */
+        catch (
+          error
+        ) {
         }
+
       },
       1500
     );
   }
 
-  // =========================================================
-  // VERTICAL PHYSICS
-  // =========================================================
-
-  function updateVertical(
-    character,
-    dt
-  ) {
-    if (
-      !character.grounded
-    ) {
-      character.vy -=
-        CONFIG.gravity *
-        dt;
-
-      character.y +=
-        character.vy *
-        dt;
-
-      if (
-        character.y <=
-        0
-      ) {
-        character.y =
-          0;
-
-        character.vy =
-          0;
-
-        character.grounded =
-          true;
-      }
-    }
-  }
-
-  // =========================================================
-  // GAMEPLAY UPDATE
-  // =========================================================
-
-  function updateGameplay(
-    dt
-  ) {
-    let movement =
-      0;
-
-    if (
-      keys.left
-    ) {
-      movement--;
-    }
-
-    if (
-      keys.right
-    ) {
-      movement++;
-    }
-
-    const speed =
-      keys.run
-        ?
-        CONFIG.runSpeed
-        :
-        CONFIG.walkSpeed;
-
-    if (
-      movement !==
-      0
-    ) {
-      const facing =
-        movement >
-        0
-          ?
-          1
-          :
-          -1;
-
-      player.facing =
-        facing;
-
-      debashis.facing =
-        facing;
-
-      player.worldX =
-        Math.max(
-          0,
-          player.worldX +
-          movement *
-          speed *
-          dt
-        );
-
-      worldScroll =
-        Math.max(
-          0,
-          worldScroll +
-          movement *
-          speed *
-          dt
-        );
-
-      if (
-        player.grounded &&
-        player.attacking <=
-        0
-      ) {
-        if (
-          keys.run
-        ) {
-          setMirroredState(
-            facing >
-            0
-              ?
-              "runR"
-              :
-              "runL"
-          );
-        }
-        else {
-          setMirroredState(
-            facing >
-            0
-              ?
-              "walkR"
-              :
-              "walkL"
-          );
-        }
-      }
-    }
-    else if (
-      player.grounded &&
-      player.attacking <=
-      0
-    ) {
-      setMirroredState(
-        "idle"
-      );
-    }
-
-    if (
-      !player.grounded
-    ) {
-      setMirroredState(
-        "jump"
-      );
-    }
-
-    if (
-      player.attacking >
-      0
-    ) {
-      setMirroredState(
-        "attack"
-      );
-    }
-
-    player.attackCooldown =
-      Math.max(
-        0,
-        player.attackCooldown -
-        dt
-      );
-
-    player.attacking =
-      Math.max(
-        0,
-        player.attacking -
-        dt
-      );
-
-    debashis.attacking =
-      Math.max(
-        0,
-        debashis.attacking -
-        dt
-      );
-
-    player.invulnerable =
-      Math.max(
-        0,
-        player.invulnerable -
-        dt
-      );
-
-    updateVertical(
-      player,
-      dt
-    );
-
-    updateVertical(
-      debashis,
-      dt
-    );
-
-    player.animTime +=
-      dt;
-
-    debashis.animTime +=
-      dt;
-
-    maintainChunks();
-
-    updateEnemyDirector(
-      dt
-    );
-
-    updateEnemies(
-      dt
-    );
-
-    updateHeartShots(
-      dt
-    );
-
-    updateIncomingAttacks(
-      dt
-    );
-
-    updateGroundHazards(
-      dt
-    );
-
-    updateParticles(
-      dt
-    );
-
-    if (
-      mode ===
-      MODE.CHASE
-    ) {
-      groundHazardTimer -=
-        dt;
-
-      if (
-        groundHazardTimer <=
-        0
-      ) {
-        spawnGroundHazard();
-
-        groundHazardTimer =
-          randomRange(
-            5.0,
-            8.2
-          );
-      }
-    }
-  }
-
-  // =========================================================
-  // ENEMY UPDATE
-  // =========================================================
-
-  function updateEnemies(
-    dt
-  ) {
-    for (
-      let i =
-        enemies.length -
-        1;
-
-      i >= 0;
-
-      i--
-    ) {
-      const enemy =
-        enemies[i];
-
-      const def =
-        ENEMY_TYPES[
-          enemy.type
-        ];
-
-      enemy.relX -=
-        enemy.speed *
-        dt;
-
-      enemy.attackTimer -=
-        dt;
-
-      enemy.flash =
-        Math.max(
-          0,
-          enemy.flash -
-          dt
-        );
-
-      if (
-        def.ranged &&
-        !enemy.attacked &&
-        enemy.attackTimer <=
-        0 &&
-        enemy.relX <
-        W * 0.34 &&
-        Math.random() <
-        CONFIG.enemyAttackChance
-      ) {
-        enemy.attacked =
-          true;
-
-        spawnIncomingAttack(
-          enemy
-        );
-      }
-
-      if (
-        enemy.relX <=
-        2
-      ) {
-        enemies.splice(
-          i,
-          1
-        );
-
-        hurtDebashis();
-      }
-    }
-  }
-
-  // =========================================================
-  // HEART SHOT UPDATE
-  // =========================================================
-
-  function updateHeartShots(
-    dt
-  ) {
-    const positions =
-      getCharacterScreenPositions();
-
-    for (
-      let i =
-        heartShots.length -
-        1;
-
-      i >=
-        0;
-
-      i--
-    ) {
-      const shot =
-        heartShots[i];
-
-      shot.x +=
-        shot.vx *
-        dt;
-
-      shot.life -=
-        dt;
-
-      let hit =
-        false;
-
-      for (
-        let e =
-          enemies.length -
-          1;
-
-        e >=
-          0;
-
-        e--
-      ) {
-        const enemy =
-          enemies[e];
-
-        const def =
-          ENEMY_TYPES[
-            enemy.type
-          ];
-
-        const ex =
-          positions.debashis +
-          enemy.relX;
-
-        const ey =
-          getEnemyY(
-            enemy,
-            def,
-            ex
-          );
-
-        const hitRadius =
-          def.flying
-            ?
-            44
-            :
-            49;
-
-        if (
-          Math.abs(
-            shot.x -
-            ex
-          ) <
-          hitRadius &&
-
-          Math.abs(
-            shot.y -
-            ey
-          ) <
-          52
-        ) {
-          enemy.hp--;
-
-          enemy.flash =
-            0.12;
-
-          spawnSparkles(
-            ex,
-            ey,
-            "#ff86b6",
-            8
-          );
-
-          heartShots.splice(
-            i,
-            1
-          );
-
-          hit =
-            true;
-
-          if (
-            enemy.hp <=
-            0
-          ) {
-            defeatEnemy(
-              e
-            );
-          }
-
-          break;
-        }
-      }
-
-      if (
-        !hit &&
-        shot.life <=
-        0
-      ) {
-        heartShots.splice(
-          i,
-          1
-        );
-      }
-    }
-  }
-
-  // =========================================================
-  // INCOMING ATTACK UPDATE
-  // =========================================================
-
-  function updateIncomingAttacks(
-    dt
-  ) {
-    for (
-      let i =
-        incomingAttacks.length -
-        1;
-
-      i >=
-        0;
-
-      i--
-    ) {
-      const attack =
-        incomingAttacks[i];
-
-      attack.life -=
-        dt;
-
-      if (
-        attack.life <=
-        0 &&
-        !attack.checked
-      ) {
-        attack.checked =
-          true;
-
-        const avoided =
-          !player.grounded &&
-          player.y >
-          38;
-
-        if (
-          !avoided
-        ) {
-          hurtPriyanka(
-            14
-          );
-        }
-        else {
-          showMessage(
-            "Nice jump ♥",
-            0.62
-          );
-        }
-
-        incomingAttacks.splice(
-          i,
-          1
-        );
-      }
-    }
-  }
-
-  // =========================================================
-  // HAZARD UPDATE
-  // =========================================================
-
-  function updateGroundHazards(
-    dt
-  ) {
-    for (
-      let i =
-        groundHazards.length -
-        1;
-
-      i >=
-        0;
-
-      i--
-    ) {
-      const hazard =
-        groundHazards[i];
-
-      hazard.relX -=
-        hazard.speed *
-        dt;
-
-      if (
-        hazard.relX <
-        115 &&
-        !hazard.warning
-      ) {
-        hazard.warning =
-          true;
-
-        showMessage(
-          "Jump!",
-          0.62
-        );
-      }
-
-      if (
-        hazard.relX <=
-        0
-      ) {
-        const safe =
-          !debashis.grounded &&
-          debashis.y >
-          34;
-
-        if (
-          !safe
-        ) {
-          hurtDebashis();
-        }
-        else {
-          showMessage(
-            "Saved ♥",
-            0.58
-          );
-        }
-
-        groundHazards.splice(
-          i,
-          1
-        );
-      }
-    }
-  }
-
-  // =========================================================
-  // PARTICLES UPDATE
-  // =========================================================
-
-  function updateParticles(
-    dt
-  ) {
-    for (
-      let i =
-        particles.length -
-        1;
-
-      i >=
-        0;
-
-      i--
-    ) {
-      const p =
-        particles[i];
-
-      p.x +=
-        p.vx *
-        dt;
-
-      p.y +=
-        p.vy *
-        dt;
-
-      p.vy +=
-        45 *
-        dt;
-
-      p.life -=
-        dt;
-
-      if (
-        p.life <=
-        0
-      ) {
-        particles.splice(
-          i,
-          1
-        );
-      }
-    }
-  }
-
-  // =========================================================
-  // STORY UPDATE
-  // =========================================================
-
-  function updateStory(
-    dt
-  ) {
-    player.animTime +=
-      dt;
-
-    debashis.animTime +=
-      dt;
-
-    // --------------------------
-    // DEBASHIS WALKS TO PRIYANKA
-    // --------------------------
-    if (
-      mode ===
-      MODE.MEETING
-    ) {
-      meeting.phaseTime +=
-        dt;
-
-      meeting.debashisX -=
-        86 *
-        dt;
-
-      if (
-        meeting.debashisX <=
-        meeting.targetDebashisX
-      ) {
-        meeting.debashisX =
-          meeting.targetDebashisX;
-
-        debashis.state =
-          "idle";
-
-        debashis.facing =
-          -1;
-
-        startDialogue();
-      }
-
-      return;
-    }
-
-    // --------------------------
-    // TALKING
-    // --------------------------
-    if (
-      mode ===
-      MODE.DIALOGUE
-    ) {
-      /*
-      Keep both facing each other.
-      Never rotate.
-      */
-
-      player.state =
-        "idle";
-
-      player.facing =
-        1;
-
-      debashis.state =
-        "idle";
-
-      debashis.facing =
-        -1;
-
-      dialogueTimer -=
-        dt;
-
-      updateDialogueFade();
-
-      updateSpeechBubblePosition();
-
-      if (
-        dialogueTimer <=
-        0
-      ) {
-        nextDialogue();
-      }
-
-      return;
-    }
-
-    // --------------------------
-    // PRIYANKA RUNS AWAY LEFT
-    // --------------------------
-    if (
-      mode ===
-      MODE.RUNAWAY
-    ) {
-      meeting.phaseTime +=
-        dt;
-
-      meeting.priyankaX -=
-        205 *
-        dt;
-
-      meeting.priyankaX =
-        Math.max(
-          W * 0.11,
-          meeting.priyankaX
-        );
-
-      /*
-      TRUE LEFT-FACING RUN.
-      */
-
-      player.state =
-        "runL";
-
-      player.facing =
-        -1;
-
-      debashis.state =
-        "idle";
-
-      debashis.facing =
-        -1;
-
-      if (
-        meeting.phaseTime >
-        3.8
-      ) {
-        beginChase();
-      }
-    }
-  }
 
   // =========================================================
   // MAIN UPDATE
@@ -3190,68 +4775,76 @@
   function update(
     dt
   ) {
-    time +=
+
+    gameTime +=
       dt;
 
-    updateCameraZoom(
-      dt
-    );
 
     if (
       messageTimer >
       0
     ) {
+
       messageTimer -=
         dt;
+
 
       if (
         messageTimer <=
         0
       ) {
+
         hideMessage();
       }
     }
+
 
     if (
       mode === MODE.MEETING ||
       mode === MODE.DIALOGUE ||
       mode === MODE.RUNAWAY
     ) {
+
       updateStory(
         dt
       );
     }
+
+
     else if (
       mode === MODE.CHASE ||
       mode === MODE.TOGETHER
     ) {
+
       updateGameplay(
         dt
       );
     }
+
+
     else if (
       mode === MODE.CELEBRATION
     ) {
-      celebrationTime +=
+
+      player.animTime +=
         dt;
+
+
+      debashis.animTime +=
+        dt;
+
 
       updateParticles(
         dt
       );
 
-      player.state =
-        "emote";
 
-      debashis.state =
-        "emote";
-
-      player.animTime +=
-        dt;
-
-      debashis.animTime +=
-        dt;
+      updateCamera(
+        dt
+      );
     }
   }
+
 
   // =========================================================
   // DRAW HELPERS
@@ -3264,14 +4857,18 @@
     dw,
     dh
   ) {
+
     if (
       !environmentAtlas.complete ||
       !environmentAtlas.naturalWidth
     ) {
+
       return;
     }
 
+
     ctx.drawImage(
+
       environmentAtlas,
 
       crop.x,
@@ -3286,18 +4883,22 @@
     );
   }
 
+
   function drawHorizontalScene(
     crop,
     y,
     height,
     parallax
   ) {
+
     if (
       !environmentAtlas.complete ||
       !environmentAtlas.naturalWidth
     ) {
+
       return;
     }
+
 
     const width =
       crop.w *
@@ -3306,19 +4907,16 @@
         crop.h
       );
 
+
     const offset =
       -(
         (
-          worldScroll *
+          cameraX *
           parallax
         ) %
         width
       );
 
-    /*
-    Horizontal repetition only.
-    Nothing repeats vertically.
-    */
 
     for (
       let x =
@@ -3332,407 +4930,57 @@
       x +=
         width
     ) {
+
       drawCrop(
         crop,
-
         x,
         y,
-
-        width + 1,
+        width +
+        1,
         height
       );
     }
   }
 
-  // =========================================================
-  // BUILD HILL POINTS
-  // =========================================================
 
-  function buildTerrainPoints() {
-    const points =
-      [];
+  function drawBackground() {
 
-    const step =
-      18;
-
-    for (
-      let x =
-        -40;
-
-      x <=
-        W + 40;
-
-      x +=
-        step
-    ) {
-      points.push({
-        x,
-
-        y:
-          groundYAtScreenX(
-            x
-          )
-      });
-    }
-
-    return points;
-  }
-
-  // =========================================================
-  // DRAW REAL UNEVEN HILL
-  // =========================================================
-
-  function drawTerrainSurface() {
-    const points =
-      buildTerrainPoints();
-
-    if (
-      points.length <
-      2
-    ) {
-      return;
-    }
-
-    // -------------------------
-    // SOIL UNDER HILL
-    // -------------------------
-
-    const soil =
+    const sky =
       ctx.createLinearGradient(
         0,
-        baseGroundY() -
-        20,
-
+        0,
         0,
         H
       );
 
-    soil.addColorStop(
-      0,
-      "#71523a"
-    );
 
-    soil.addColorStop(
-      0.38,
-      "#553d2d"
-    );
-
-    soil.addColorStop(
-      1,
-      "#2c2019"
-    );
-
-    ctx.fillStyle =
-      soil;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      points[0].x,
-      points[0].y +
-      22
-    );
-
-    for (
-      const p
-      of points
-    ) {
-      ctx.lineTo(
-        p.x,
-        p.y + 22
-      );
-    }
-
-    ctx.lineTo(
-      W + 50,
-      H + 50
-    );
-
-    ctx.lineTo(
-      -50,
-      H + 50
-    );
-
-    ctx.closePath();
-
-    ctx.fill();
-
-    // -------------------------
-    // WALKING PATH
-    // -------------------------
-
-    const path =
-      ctx.createLinearGradient(
-        0,
-        baseGroundY() -
-        30,
-
-        0,
-        baseGroundY() +
-        30
-      );
-
-    path.addColorStop(
-      0,
-      "#d2c1a6"
-    );
-
-    path.addColorStop(
-      0.48,
-      "#a98d72"
-    );
-
-    path.addColorStop(
-      1,
-      "#766151"
-    );
-
-    ctx.fillStyle =
-      path;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      points[0].x,
-      points[0].y
-    );
-
-    for (
-      const p
-      of points
-    ) {
-      ctx.lineTo(
-        p.x,
-        p.y
-      );
-    }
-
-    for (
-      let i =
-        points.length -
-        1;
-
-      i >=
-        0;
-
-      i--
-    ) {
-      ctx.lineTo(
-        points[i].x,
-        points[i].y +
-        25
-      );
-    }
-
-    ctx.closePath();
-
-    ctx.fill();
-
-    // -------------------------
-    // GRASS EDGE
-    // -------------------------
-
-    const grass =
-      ctx.createLinearGradient(
-        0,
-        baseGroundY() -
-        25,
-
-        0,
-        baseGroundY() +
-        10
-      );
-
-    grass.addColorStop(
-      0,
-      "#71b658"
-    );
-
-    grass.addColorStop(
-      1,
-      "#35633d"
-    );
-
-    ctx.strokeStyle =
-      grass;
-
-    ctx.lineWidth =
-      15;
-
-    ctx.lineJoin =
-      "round";
-
-    ctx.lineCap =
-      "round";
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      points[0].x,
-      points[0].y +
-      2
-    );
-
-    for (
-      const p
-      of points
-    ) {
-      ctx.lineTo(
-        p.x,
-        p.y + 2
-      );
-    }
-
-    ctx.stroke();
-
-    // -------------------------
-    // BRIGHT GRASS TOP
-    // -------------------------
-
-    ctx.strokeStyle =
-      "rgba(225,255,195,.82)";
-
-    ctx.lineWidth =
-      2;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      points[0].x,
-      points[0].y -
-      3
-    );
-
-    for (
-      const p
-      of points
-    ) {
-      ctx.lineTo(
-        p.x,
-        p.y - 3
-      );
-    }
-
-    ctx.stroke();
-
-    // -------------------------
-    // ROCKS + SMALL FLOWERS
-    // -------------------------
-
-    for (
-      let x =
-        -15;
-
-      x <
-        W + 40;
-
-      x +=
-        72
-    ) {
-      const gy =
-        groundYAtScreenX(
-          x
-        );
-
-      // stone
-      ctx.fillStyle =
-        "rgba(118,100,87,.70)";
-
-      ctx.beginPath();
-
-      ctx.ellipse(
-        x + 30,
-        gy + 18,
-
-        7,
-        3.4,
-
-        0.2,
-
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      // pink flower
-      ctx.fillStyle =
-        "rgba(255,211,226,.95)";
-
-      ctx.beginPath();
-
-      ctx.arc(
-        x + 10,
-        gy + 1,
-
-        2.3,
-
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      // yellow flower
-      ctx.fillStyle =
-        "rgba(255,245,161,.95)";
-
-      ctx.beginPath();
-
-      ctx.arc(
-        x + 15,
-        gy - 1,
-
-        1.7,
-
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-    }
-  }
-
-  // =========================================================
-  // ENVIRONMENT
-  // =========================================================
-
-  function drawEnvironment() {
-    // -------------------------
-    // SKY
-    // -------------------------
-
-    const skyGradient =
-      ctx.createLinearGradient(
-        0,
-        0,
-
-        0,
-        H
-      );
-
-    skyGradient.addColorStop(
+    sky.addColorStop(
       0,
       "#24114b"
     );
 
-    skyGradient.addColorStop(
+
+    sky.addColorStop(
       0.42,
       "#6a4e88"
     );
 
-    skyGradient.addColorStop(
+
+    sky.addColorStop(
       0.72,
       "#d78ca2"
     );
 
-    skyGradient.addColorStop(
+
+    sky.addColorStop(
       1,
       "#f0c29f"
     );
 
+
     ctx.fillStyle =
-      skyGradient;
+      sky;
+
 
     ctx.fillRect(
       0,
@@ -3741,253 +4989,531 @@
       H
     );
 
-    /*
-    Background only repeats
-    HORIZONTALLY.
-    */
 
     drawHorizontalScene(
       ENV.sky,
-
       0,
-
-      H * 0.63,
-
-      0.055
+      H *
+      0.63,
+      0.05
     );
 
-    // -------------------------
-    // HAZE
-    // -------------------------
 
     const haze =
       ctx.createLinearGradient(
         0,
-        H * 0.42,
-
+        H *
+        0.40,
         0,
-        H * 0.74
+        H *
+        0.75
       );
+
 
     haze.addColorStop(
       0,
       "rgba(116,94,142,0)"
     );
 
+
     haze.addColorStop(
       1,
-      "rgba(93,79,88,.38)"
+      "rgba(93,79,88,.34)"
     );
+
 
     ctx.fillStyle =
       haze;
 
+
     ctx.fillRect(
       0,
-      H * 0.42,
-
+      H *
+      0.40,
       W,
-      H * 0.32
+      H *
+      0.35
     );
 
-    // -------------------------
-    // FOREST MIDGROUND
-    // -------------------------
 
     drawHorizontalScene(
       ENV.forest,
-
-      H * 0.50,
-
-      H * 0.24,
-
-      0.20
-    );
-
-    // -------------------------
-    // WORLD OBJECTS
-    // -------------------------
-
-    drawWorldDecorations();
-
-    // -------------------------
-    // HILL / PATH
-    // -------------------------
-
-    drawTerrainSurface();
-
-    // -------------------------
-    // LOWER SHADE
-    // -------------------------
-
-    const shade =
-      ctx.createLinearGradient(
-        0,
-        baseGroundY(),
-
-        0,
-        H
-      );
-
-    shade.addColorStop(
-      0,
-      "rgba(15,33,23,0)"
-    );
-
-    shade.addColorStop(
-      1,
-      "rgba(9,20,14,.45)"
-    );
-
-    ctx.fillStyle =
-      shade;
-
-    ctx.fillRect(
-      0,
-      baseGroundY() -
-      20,
-
-      W,
-
-      H -
-      baseGroundY() +
-      20
+      H *
+      0.48,
+      H *
+      0.26,
+      0.16
     );
   }
 
+
   // =========================================================
-  // WORLD DECORATIONS
+  // MARIO PLATFORM DRAW
   // =========================================================
 
-  function drawWorldDecorations() {
+  function drawPlatform(
+    platform
+  ) {
+
+    const screenX =
+      worldToScreenX(
+        platform.x
+      );
+
+
+    const y =
+      platformY(
+        platform.offset
+      );
+
+
+    const width =
+      platform.w;
+
+
+    if (
+      screenX +
+      width <
+      -80 ||
+
+      screenX >
+      W +
+      80
+    ) {
+
+      return;
+    }
+
+
+    // ========================================================
+    // DIRT BODY
+    // ========================================================
+
+    const dirt =
+      ctx.createLinearGradient(
+        0,
+        y,
+        0,
+        y +
+        90
+      );
+
+
+    dirt.addColorStop(
+      0,
+      "#8d6240"
+    );
+
+
+    dirt.addColorStop(
+      0.35,
+      "#6f492f"
+    );
+
+
+    dirt.addColorStop(
+      1,
+      "#3f2c22"
+    );
+
+
+    ctx.fillStyle =
+      dirt;
+
+
+    ctx.fillRect(
+      screenX,
+      y +
+      9,
+      width,
+      H -
+      y +
+      120
+    );
+
+
+    // ========================================================
+    // TOP SOIL
+    // ========================================================
+
+    ctx.fillStyle =
+      "#b58a63";
+
+
+    ctx.fillRect(
+      screenX,
+      y +
+      5,
+      width,
+      22
+    );
+
+
+    // ========================================================
+    // GRASS
+    // ========================================================
+
+    ctx.fillStyle =
+      "#4d913e";
+
+
+    ctx.fillRect(
+      screenX,
+      y,
+      width,
+      12
+    );
+
+
+    ctx.fillStyle =
+      "#78c856";
+
+
+    ctx.fillRect(
+      screenX,
+      y,
+      width,
+      4
+    );
+
+
+    // ========================================================
+    // TILE LINES
+    // ========================================================
+
+    ctx.strokeStyle =
+      "rgba(63,38,27,.35)";
+
+
+    ctx.lineWidth =
+      1;
+
+
+    for (
+      let tileX =
+        screenX +
+        46;
+
+      tileX <
+        screenX +
+        width;
+
+      tileX +=
+        46
+    ) {
+
+      ctx.beginPath();
+
+
+      ctx.moveTo(
+        tileX,
+        y +
+        10
+      );
+
+
+      ctx.lineTo(
+        tileX,
+        y +
+        38
+      );
+
+
+      ctx.stroke();
+    }
+
+
+    // ========================================================
+    // GRASS TUFTS
+    // ========================================================
+
+    ctx.strokeStyle =
+      "#87d764";
+
+
+    ctx.lineWidth =
+      2;
+
+
+    for (
+      let grassX =
+        screenX +
+        24;
+
+      grassX <
+        screenX +
+        width;
+
+      grassX +=
+        80
+    ) {
+
+      ctx.beginPath();
+
+
+      ctx.moveTo(
+        grassX,
+        y +
+        1
+      );
+
+
+      ctx.lineTo(
+        grassX -
+        4,
+        y -
+        7
+      );
+
+
+      ctx.moveTo(
+        grassX,
+        y +
+        1
+      );
+
+
+      ctx.lineTo(
+        grassX +
+        4,
+        y -
+        8
+      );
+
+
+      ctx.stroke();
+    }
+  }
+
+
+  function drawPlatforms() {
+
+    for (
+      const platform
+      of allActivePlatforms()
+    ) {
+
+      drawPlatform(
+        platform
+      );
+    }
+  }
+
+
+  // =========================================================
+  // DECORATIONS
+  // =========================================================
+
+  function drawDecorations() {
+
     if (
       !environmentAtlas.complete ||
       !environmentAtlas.naturalWidth
     ) {
+
       return;
     }
+
 
     for (
       const chunk
       of chunks.values()
     ) {
+
       for (
-        const object
-        of chunk.objects
+        const decoration
+        of chunk.decorations
       ) {
+
         const sx =
-          object.x -
-          worldScroll;
+          worldToScreenX(
+            decoration.x
+          );
+
 
         if (
           sx <
-          -240 ||
+          -200 ||
+
           sx >
-          W + 240
+          W +
+          200
         ) {
+
           continue;
         }
 
+
         const crop =
           ENV[
-            object.type
+            decoration.type
           ];
+
 
         if (
           !crop
         ) {
+
           continue;
         }
 
+
         let baseW =
-          108;
+          110;
+
 
         let baseH =
           100;
 
+
         if (
-          object.type ===
+          decoration.type ===
           "pinkTree"
         ) {
+
           baseW =
-            150;
+            145;
+
 
           baseH =
-            132;
+            130;
         }
+
 
         if (
-          object.type ===
+          decoration.type ===
           "fountain" ||
-          object.type ===
+
+          decoration.type ===
           "bridge"
         ) {
+
           baseW =
-            142;
+            140;
+
 
           baseH =
-            102;
+            100;
         }
 
-        const w =
+
+        const width =
           baseW *
-          object.scale *
-          cameraZoom;
+          decoration.scale;
 
-        const h =
+
+        const height =
           baseH *
-          object.scale *
-          cameraZoom;
+          decoration.scale;
 
-        /*
-        Decoration is positioned
-        according to actual hill height.
-        */
 
-        const gy =
-          groundYAtWorld(
-            object.x
+        const y =
+          platformY(
+            decoration.offset
           );
+
 
         drawCrop(
           crop,
-
           sx -
-          w / 2,
-
-          gy -
-          h -
-          3,
-
-          w,
-          h
+          width /
+          2,
+          y -
+          height -
+          5,
+          width,
+          height
         );
       }
     }
   }
 
+
   // =========================================================
-  // CHARACTER SPRITE DRAWING
+  // ANIMATION FRAME
+  //
+  // THIS IS THE MAIN SKATING FIX.
+  // =========================================================
+
+  function animationFrame(
+    character,
+    anim,
+    state
+  ) {
+
+    if (
+      state ===
+      "walk"
+    ) {
+
+      /*
+      One animation frame for approximately
+      every 16 pixels travelled.
+      */
+
+      return (
+        Math.floor(
+          character.animDistance /
+          16
+        ) %
+        anim.frames
+      );
+    }
+
+
+    if (
+      state ===
+      "run"
+    ) {
+
+      return (
+        Math.floor(
+          character.animDistance /
+          23
+        ) %
+        anim.frames
+      );
+    }
+
+
+    return (
+      Math.floor(
+        character.animTime *
+        anim.fps
+      ) %
+      anim.frames
+    );
+  }
+
+
+  // =========================================================
+  // CHARACTER DRAW
   // =========================================================
 
   function drawCharacter(
     image,
     animations,
     cell,
-    state,
-    animTime,
-    x,
-    y,
-    facing,
-    scale = 1,
+    character,
+    screenX,
+    scale,
     options = {}
   ) {
+
     if (
       !image.complete ||
       !image.naturalWidth
     ) {
+
       return;
     }
+
+
+    const state =
+      options.state ||
+      character.state ||
+      "idle";
+
 
     const anim =
       animations[
@@ -3995,570 +5521,450 @@
       ] ||
       animations.idle;
 
+
     let frame =
-      Math.floor(
-        animTime *
-        anim.fps
-      ) %
-      anim.frames;
+      animationFrame(
+        character,
+        anim,
+        state
+      );
+
 
     if (
       Number.isInteger(
         options.fixedFrame
       )
     ) {
+
       frame =
         options.fixedFrame;
     }
 
-    const sx =
+
+    const sourceX =
       frame *
       cell.width;
 
-    const sy =
+
+    const sourceY =
       anim.row *
       cell.height;
 
-    const h =
+
+    const height =
       166 *
       scale;
 
-    const w =
+
+    const width =
       148 *
       scale;
 
-    ctx.save();
 
-    ctx.translate(
-      x,
-      y
-    );
+    const screenY =
+      options.screenY !==
+      undefined
+        ?
+        options.screenY
+        :
+        character.y;
 
-    let flip =
-      false;
 
-    /*
-    Walk/run have dedicated
-    left/right atlas rows.
+    let facing =
+      options.facing !==
+      undefined
+        ?
+        options.facing
+        :
+        character.facing;
 
-    Jump/attack/emote only have one
-    orientation, so they are mirrored
-    when facing left.
-    */
 
     if (
       options.forceFacing ===
       "left"
     ) {
-      flip =
-        true;
+
+      facing =
+        -1;
     }
-    else if (
+
+
+    if (
       options.forceFacing ===
       "right"
     ) {
-      flip =
-        false;
+
+      facing =
+        1;
     }
-    else if (
-      (
-        state === "jump" ||
-        state === "attack" ||
-        state === "emote"
-      ) &&
+
+
+    ctx.save();
+
+
+    ctx.translate(
+      screenX,
+      screenY
+    );
+
+
+    // ========================================================
+    // LEFT = ALWAYS MIRROR RIGHT SOURCE
+    // ========================================================
+
+    if (
       facing <
       0
     ) {
-      flip =
-        true;
-    }
 
-    if (
-      flip
-    ) {
       ctx.scale(
         -1,
         1
       );
     }
 
+
     ctx.drawImage(
+
       image,
 
-      sx,
-      sy,
+      sourceX,
+      sourceY,
 
       cell.width,
       cell.height,
 
-      -w / 2,
+      -width /
+      2,
 
-      -h + 9,
+      -height +
+      8,
 
-      w,
-      h
+      width,
+      height
     );
+
 
     ctx.restore();
   }
 
+
   // =========================================================
-  // OPENING CHARACTERS
+  // OPENING CHARACTER DRAW
   // =========================================================
 
   function drawOpeningCharacters() {
-    const px =
-      meeting.priyankaX ||
-      W * 0.30;
-
-    const dx =
-      meeting.debashisX ||
-      W * 0.79;
 
     const ground =
       baseGroundY();
 
-    // -------------------------
-    // DIALOGUE
-    // -------------------------
 
     if (
       mode ===
       MODE.DIALOGUE
     ) {
-      /*
-      Fixed facing.
-
-      PRIYANKA →
-      ← DEBASHIS
-      */
 
       drawCharacter(
         priyankaAtlas,
-
         PRIYANKA_ANIMS,
-
         PRIYANKA_CELL,
-
-        "idle",
-
-        0,
-
-        px,
-
-        ground,
-
-        1,
-
-        0.95 *
-        cameraZoom,
-
+        player,
+        meeting.priyankaX,
+        0.96,
         {
+          state:
+            "idle",
+
           fixedFrame:
             0,
 
           forceFacing:
-            "right"
+            "right",
+
+          screenY:
+            ground
         }
       );
+
 
       drawCharacter(
         debashisAtlas,
-
         DEBASHIS_ANIMS,
-
         DEBASHIS_CELL,
-
-        "idle",
-
-        0,
-
-        dx,
-
-        ground,
-
-        -1,
-
-        0.95 *
-        cameraZoom,
-
+        debashis,
+        meeting.debashisX,
+        0.96,
         {
+          state:
+            "idle",
+
           fixedFrame:
             0,
 
           forceFacing:
-            "left"
+            "left",
+
+          screenY:
+            ground
         }
       );
+
 
       return;
     }
 
-    // -------------------------
-    // RUNAWAY
-    // -------------------------
 
     if (
       mode ===
       MODE.RUNAWAY
     ) {
-      /*
-      TRUE LEFT-FACING RUN.
-
-      No mirror.
-      Uses row 3 directly.
-      */
 
       drawCharacter(
         priyankaAtlas,
-
         PRIYANKA_ANIMS,
-
         PRIYANKA_CELL,
+        player,
+        meeting.priyankaX,
+        0.96,
+        {
+          state:
+            "run",
 
-        "runL",
+          forceFacing:
+            "left",
 
-        player.animTime,
-
-        px,
-
-        ground,
-
-        -1,
-
-        0.95 *
-        cameraZoom
+          screenY:
+            ground
+        }
       );
+
 
       drawCharacter(
         debashisAtlas,
-
         DEBASHIS_ANIMS,
-
         DEBASHIS_CELL,
-
-        "idle",
-
-        0,
-
-        dx,
-
-        ground,
-
-        -1,
-
-        0.95 *
-        cameraZoom,
-
+        debashis,
+        meeting.debashisX,
+        0.96,
         {
+          state:
+            "idle",
+
           fixedFrame:
             0,
 
           forceFacing:
-            "left"
+            "left",
+
+          screenY:
+            ground
         }
       );
 
-      /*
-      Small anger symbol.
-      */
 
       if (
         meeting.phaseTime <
         1.25
       ) {
+
         ctx.save();
 
+
         ctx.font =
-          `bold ${
-            Math.round(
-              25 *
-              cameraZoom
-            )
-          }px sans-serif`;
+          "bold 25px sans-serif";
+
 
         ctx.fillStyle =
           "#ff4267";
 
+
         ctx.textAlign =
           "center";
 
+
         ctx.fillText(
           "!",
-
-          px,
-
+          meeting.priyankaX,
           ground -
-          150 *
-          cameraZoom
+          150
         );
+
 
         ctx.restore();
       }
 
+
       return;
     }
 
-    // -------------------------
-    // FIRST MEETING
-    // -------------------------
 
     drawCharacter(
       priyankaAtlas,
-
       PRIYANKA_ANIMS,
-
       PRIYANKA_CELL,
-
-      "idle",
-
-      0,
-
-      px,
-
-      ground,
-
-      1,
-
-      0.95 *
-      cameraZoom,
-
+      player,
+      meeting.priyankaX,
+      0.96,
       {
+        state:
+          "idle",
+
         fixedFrame:
           0,
 
         forceFacing:
-          "right"
+          "right",
+
+        screenY:
+          ground
       }
     );
 
+
     drawCharacter(
       debashisAtlas,
-
       DEBASHIS_ANIMS,
-
       DEBASHIS_CELL,
+      debashis,
+      meeting.debashisX,
+      0.96,
+      {
+        state:
+          debashis.state,
 
-      debashis.state,
+        forceFacing:
+          "left",
 
-      debashis.animTime,
-
-      dx,
-
-      ground,
-
-      -1,
-
-      0.95 *
-      cameraZoom,
-
-      debashis.state ===
-      "idle"
-        ?
-        {
-          fixedFrame:
-            0,
-
-          forceFacing:
-            "left"
-        }
-        :
-        {}
+        screenY:
+          ground
+      }
     );
   }
 
+
   // =========================================================
-  // GAMEPLAY CHARACTERS ON HILL
+  // GAMEPLAY CHARACTERS
   // =========================================================
 
   function drawGameplayCharacters() {
-    const positions =
-      getCharacterScreenPositions();
-
-    const scale =
-      CONFIG.characterScale *
-      cameraZoom;
-
-    /*
-    IMPORTANT
-
-    Each character gets a DIFFERENT
-    ground height based on where they
-    are positioned on the hill.
-    */
-
-    const pg =
-      groundYAtScreenX(
-        positions.priyanka
-      );
-
-    const dg =
-      groundYAtScreenX(
-        positions.debashis
-      );
 
     drawCharacter(
       priyankaAtlas,
-
       PRIYANKA_ANIMS,
-
       PRIYANKA_CELL,
-
-      player.state,
-
-      player.animTime,
-
-      positions.priyanka,
-
-      pg -
-      player.y,
-
-      player.facing,
-
-      scale
+      player,
+      worldToScreenX(
+        player.x
+      ),
+      CONFIG.characterScale
     );
+
 
     drawCharacter(
       debashisAtlas,
-
       DEBASHIS_ANIMS,
-
       DEBASHIS_CELL,
-
-      debashis.state,
-
-      debashis.animTime,
-
-      positions.debashis,
-
-      dg -
-      debashis.y,
-
-      debashis.facing,
-
-      scale *
+      debashis,
+      worldToScreenX(
+        debashis.x
+      ),
+      CONFIG.characterScale *
       0.98
     );
   }
 
+
   // =========================================================
-  // ENEMIES ON HILL
+  // ENEMY DRAW
   // =========================================================
 
-  function getEnemyY(
-    enemy,
-    def,
-    screenX
+  function drawEnemy(
+    enemy
   ) {
-    const ground =
-      groundYAtScreenX(
-        screenX
-      );
 
-    if (
-      def.flying
-    ) {
-      return (
-        ground -
-
-        108 *
-        cameraZoom +
-
-        Math.sin(
-          time * 4.2 +
-          enemy.bob
-        ) *
-        13 *
-        cameraZoom
-      );
-    }
-
-    return (
-      ground -
-
-      47 *
-      cameraZoom +
-
-      Math.sin(
-        time * 3.4 +
-        enemy.bob
-      ) *
-      2 *
-      cameraZoom
-    );
-  }
-
-  function drawEnemySprite(
-    enemy,
-    x,
-    y
-  ) {
     const def =
       ENEMY_TYPES[
         enemy.type
       ];
 
-    const crop =
-      def.crop;
+
+    const screenX =
+      worldToScreenX(
+        enemy.x
+      );
+
 
     if (
-      !environmentAtlas.complete ||
-      !environmentAtlas.naturalWidth
+      screenX <
+      -100 ||
+
+      screenX >
+      W +
+      100
     ) {
+
       return;
     }
 
-    const naturalRatio =
+
+    const crop =
+      def.crop;
+
+
+    const height =
+      (
+        def.flying
+          ?
+          72
+          :
+          83
+      ) *
+      def.scale;
+
+
+    const width =
+      height *
       crop.w /
       crop.h;
 
-    const baseH =
+
+    const screenY =
       def.flying
         ?
-        72
+        enemy.y
         :
-        83;
+        enemy.y -
+        height /
+        2;
 
-    const h =
-      baseH *
-      def.scale *
-      cameraZoom;
-
-    const w =
-      h *
-      naturalRatio;
 
     ctx.save();
+
 
     if (
       enemy.flash >
       0
     ) {
+
       ctx.globalAlpha =
-        0.58 +
-        Math.sin(
-          enemy.flash *
-          90
-        ) *
-        0.30;
+        0.55;
     }
 
-    /*
-    Enemy artwork faces toward
-    Debashis.
-    */
 
     ctx.translate(
-      x,
-      y
+      screenX,
+      screenY
     );
+
 
     ctx.scale(
       -1,
       1
     );
 
+
     ctx.drawImage(
+
       environmentAtlas,
 
       crop.x,
@@ -4566,100 +5972,74 @@
       crop.w,
       crop.h,
 
-      -w / 2,
-      -h / 2,
+      -width /
+      2,
 
-      w,
-      h
+      -height /
+      2,
+
+      width,
+      height
     );
+
 
     ctx.restore();
 
-    // -------------------------
-    // HP BAR
-    // -------------------------
 
+    // HP bar.
     if (
       enemy.maxHp >
       1
     ) {
-      const barW =
-        42 *
-        cameraZoom;
+
+      const barY =
+        (
+          def.flying
+            ?
+            screenY
+            :
+            enemy.y -
+            height
+        ) -
+        8;
+
 
       ctx.fillStyle =
-        "rgba(25,8,22,.62)";
+        "rgba(25,8,22,.65)";
+
 
       ctx.fillRect(
-        x -
-        barW / 2,
-
-        y -
-        h / 2 -
-        11,
-
-        barW,
+        screenX -
+        22,
+        barY,
+        44,
         5
       );
+
 
       ctx.fillStyle =
         "#ff7ca8";
 
+
       ctx.fillRect(
-        x -
-        barW / 2,
-
-        y -
-        h / 2 -
-        11,
-
-        barW *
+        screenX -
+        22,
+        barY,
+        44 *
         clamp(
           enemy.hp /
           enemy.maxHp,
           0,
           1
         ),
-
         5
       );
     }
   }
 
-  function drawEnemies() {
-    const positions =
-      getCharacterScreenPositions();
-
-    for (
-      const enemy
-      of enemies
-    ) {
-      const def =
-        ENEMY_TYPES[
-          enemy.type
-        ];
-
-      const x =
-        positions.debashis +
-        enemy.relX;
-
-      const y =
-        getEnemyY(
-          enemy,
-          def,
-          x
-        );
-
-      drawEnemySprite(
-        enemy,
-        x,
-        y
-      );
-    }
-  }
 
   // =========================================================
-  // HEART PROJECTILES
+  // HEART DRAW
   // =========================================================
 
   function drawHeartShape(
@@ -4668,352 +6048,326 @@
     size,
     color
   ) {
+
     ctx.save();
+
 
     ctx.translate(
       x,
       y
     );
 
+
     ctx.scale(
-      size / 32,
-      size / 32
+      size /
+      32,
+      size /
+      32
     );
 
+
     ctx.beginPath();
+
 
     ctx.moveTo(
       0,
       8
     );
 
+
     ctx.bezierCurveTo(
       -20,
       -10,
-
       -38,
       8,
-
       -27,
       27
     );
 
+
     ctx.bezierCurveTo(
       -19,
       41,
-
       -7,
       49,
-
       0,
       56
     );
 
+
     ctx.bezierCurveTo(
       7,
       49,
-
       19,
       41,
-
       27,
       27
     );
 
+
     ctx.bezierCurveTo(
       38,
       8,
-
       20,
       -10,
-
       0,
       8
     );
 
+
     ctx.closePath();
+
 
     ctx.fillStyle =
       color;
 
+
     ctx.fill();
+
 
     ctx.restore();
   }
 
+
   function drawHeartShots() {
+
     for (
       const shot
       of heartShots
     ) {
+
+      const screenX =
+        worldToScreenX(
+          shot.x
+        );
+
+
       ctx.save();
+
 
       ctx.shadowColor =
         "#ff5fa9";
 
+
       ctx.shadowBlur =
-        17;
+        16;
+
 
       drawHeartShape(
-        shot.x,
-
+        screenX,
         shot.y,
-
-        16 *
-        cameraZoom,
-
+        16,
         "#ff5fa9"
       );
+
 
       ctx.shadowBlur =
         0;
 
+
       drawHeartShape(
-        shot.x,
-
+        screenX,
         shot.y,
-
-        8 *
-        cameraZoom,
-
+        8,
         "#fff2f8"
       );
+
 
       ctx.restore();
     }
   }
 
+
   // =========================================================
-  // INCOMING MAGIC ATTACK
+  // ENEMY ATTACK DRAW
   // =========================================================
 
   function drawIncomingAttacks() {
-    const positions =
-      getCharacterScreenPositions();
 
     for (
       const attack
       of incomingAttacks
     ) {
+
       const t =
         1 -
         attack.life /
         attack.duration;
 
-      const startX =
-        positions.debashis +
-        attack.sourceOffset;
 
-      const endX =
-        positions.priyanka;
-
-      const x =
+      const worldX =
         lerp(
-          startX,
-          endX,
+          attack.startX,
+          attack.endX,
           t
         );
 
-      /*
-      Attack trajectory also follows
-      different hill heights.
-      */
-
-      const startGround =
-        groundYAtScreenX(
-          startX
-        );
-
-      const endGround =
-        groundYAtScreenX(
-          endX
-        );
 
       const y =
         lerp(
-          startGround,
-          endGround,
+          attack.startY,
+          attack.endY,
           t
         ) -
-
-        72 *
-        cameraZoom -
-
         Math.sin(
           t *
           Math.PI
         ) *
-        44 *
-        cameraZoom;
+        44;
+
+
+      const screenX =
+        worldToScreenX(
+          worldX
+        );
+
 
       ctx.save();
+
 
       ctx.shadowColor =
         "#7338cf";
 
+
       ctx.shadowBlur =
         18;
+
 
       ctx.fillStyle =
         "#7d45d8";
 
+
       ctx.beginPath();
 
+
       ctx.arc(
-        x,
+        screenX,
         y,
-
-        9 *
-        cameraZoom,
-
+        9,
         0,
         Math.PI *
         2
       );
 
-      ctx.fill();
-
-      ctx.fillStyle =
-        "#e5d7ff";
-
-      ctx.beginPath();
-
-      ctx.arc(
-        x,
-        y,
-
-        3 *
-        cameraZoom,
-
-        0,
-        Math.PI *
-        2
-      );
 
       ctx.fill();
+
 
       ctx.restore();
     }
   }
 
+
   // =========================================================
-  // GROUND HAZARD ON HILL
+  // HAZARD DRAW
   // =========================================================
 
-  function drawGroundHazards() {
-    const positions =
-      getCharacterScreenPositions();
+  function drawHazards() {
 
     for (
       const hazard
-      of groundHazards
+      of hazards
     ) {
-      const x =
-        positions.debashis +
-        hazard.relX;
 
-      const gy =
-        groundYAtScreenX(
-          x
+      const screenX =
+        worldToScreenX(
+          hazard.x
         );
 
-      const s =
-        cameraZoom;
 
-      ctx.save();
+      const y =
+        hazard.y;
+
 
       ctx.fillStyle =
         "#315830";
 
+
       ctx.strokeStyle =
         "#203c26";
+
 
       ctx.lineWidth =
         2;
 
+
       ctx.beginPath();
 
+
       ctx.moveTo(
-        x -
-        27 *
-        s,
-
-        gy
+        screenX -
+        25,
+        y
       );
+
 
       ctx.lineTo(
-        x -
-        15 *
-        s,
-
-        gy -
-        37 *
-        s
+        screenX -
+        14,
+        y -
+        35
       );
+
 
       ctx.lineTo(
-        x -
-        5 *
-        s,
-
-        gy
+        screenX -
+        4,
+        y
       );
+
 
       ctx.lineTo(
-        x +
-        7 *
-        s,
-
-        gy -
-        46 *
-        s
+        screenX +
+        7,
+        y -
+        45
       );
+
 
       ctx.lineTo(
-        x +
-        18 *
-        s,
-
-        gy
+        screenX +
+        18,
+        y
       );
+
 
       ctx.lineTo(
-        x +
-        28 *
-        s,
-
-        gy -
-        31 *
-        s
+        screenX +
+        28,
+        y -
+        30
       );
+
 
       ctx.lineTo(
-        x +
-        37 *
-        s,
-
-        gy
+        screenX +
+        37,
+        y
       );
+
 
       ctx.closePath();
 
+
       ctx.fill();
 
-      ctx.stroke();
 
-      ctx.restore();
+      ctx.stroke();
     }
   }
 
+
   // =========================================================
-  // PARTICLES
+  // PARTICLES DRAW
   // =========================================================
 
   function drawParticles() {
+
     for (
       const p
       of particles
     ) {
+
       ctx.globalAlpha =
         clamp(
           p.life /
@@ -5022,132 +6376,120 @@
           1
         );
 
+
       ctx.fillStyle =
         p.color;
 
+
       ctx.beginPath();
 
+
       ctx.arc(
-        p.x,
+        worldToScreenX(
+          p.x
+        ),
         p.y,
-
         p.size,
-
         0,
         Math.PI *
         2
       );
 
+
       ctx.fill();
     }
+
 
     ctx.globalAlpha =
       1;
   }
 
+
   // =========================================================
-  // CELEBRATION SKY
+  // CELEBRATION
   // =========================================================
 
-  function drawCelebrationSky() {
-    const gradient =
-      ctx.createLinearGradient(
-        0,
-        0,
-
-        0,
-        H * 0.7
-      );
-
-    gradient.addColorStop(
-      0,
-      "rgba(76,25,104,.22)"
-    );
-
-    gradient.addColorStop(
-      1,
-      "rgba(255,145,181,.08)"
-    );
-
-    ctx.fillStyle =
-      gradient;
-
-    ctx.fillRect(
-      0,
-      0,
-      W,
-      H * 0.72
-    );
+  function drawCelebrationText() {
 
     ctx.textAlign =
       "center";
 
+
     ctx.shadowColor =
       "#ffd391";
 
+
     ctx.shadowBlur =
-      24;
+      22;
+
 
     ctx.fillStyle =
       "#fff1c2";
+
 
     ctx.font =
       `italic ${
         Math.max(
           30,
-
           Math.min(
             58,
-
-            W * 0.06
+            W *
+            0.06
           )
         )
       }px Georgia`;
 
+
     ctx.fillText(
       "Happy Halfway Anniversary",
-
-      W / 2,
-
-      H * 0.20
+      W /
+      2,
+      H *
+      0.20
     );
 
+
     ctx.shadowBlur =
-      12;
+      10;
+
 
     ctx.fillStyle =
       "#ffd8e3";
+
 
     ctx.font =
       `italic ${
         Math.max(
           22,
-
           Math.min(
             38,
-
-            W * 0.04
+            W *
+            0.04
           )
         )
       }px Georgia`;
 
+
     ctx.fillText(
       "Priyanka ♥ Debashis",
-
-      W / 2,
-
-      H * 0.27
+      W /
+      2,
+      H *
+      0.27
     );
+
 
     ctx.shadowBlur =
       0;
   }
+
 
   // =========================================================
   // RENDER
   // =========================================================
 
   function render() {
+
     ctx.clearRect(
       0,
       0,
@@ -5155,245 +6497,246 @@
       H
     );
 
-    drawEnvironment();
 
-    // -------------------------
-    // WAIT SCREEN
-    // -------------------------
+    drawBackground();
 
-    if (
-      mode ===
-      MODE.WAIT
-    ) {
-      meeting.priyankaX =
-        W * 0.30;
 
-      meeting.debashisX =
-        W * 0.79;
-
-      drawCharacter(
-        priyankaAtlas,
-
-        PRIYANKA_ANIMS,
-
-        PRIYANKA_CELL,
-
-        "idle",
-
-        0,
-
-        meeting.priyankaX,
-
-        baseGroundY(),
-
-        1,
-
-        0.95,
-
-        {
-          fixedFrame:
-            0,
-
-          forceFacing:
-            "right"
-        }
-      );
-
-      drawCharacter(
-        debashisAtlas,
-
-        DEBASHIS_ANIMS,
-
-        DEBASHIS_CELL,
-
-        "idle",
-
-        0,
-
-        meeting.debashisX,
-
-        baseGroundY(),
-
-        -1,
-
-        0.95,
-
-        {
-          fixedFrame:
-            0,
-
-          forceFacing:
-            "left"
-        }
-      );
-
-      return;
-    }
-
-    // -------------------------
-    // STORY
-    // -------------------------
+    // ========================================================
+    // OPENING SCENE
+    // ========================================================
 
     if (
+      mode === MODE.WAIT ||
       mode === MODE.MEETING ||
       mode === MODE.DIALOGUE ||
       mode === MODE.RUNAWAY
     ) {
+
+      // Simple clean opening platform.
+      ctx.fillStyle =
+        "#6f492f";
+
+
+      ctx.fillRect(
+        0,
+        baseGroundY() +
+        10,
+        W,
+        H -
+        baseGroundY()
+      );
+
+
+      ctx.fillStyle =
+        "#4d913e";
+
+
+      ctx.fillRect(
+        0,
+        baseGroundY(),
+        W,
+        14
+      );
+
+
+      ctx.fillStyle =
+        "#78c856";
+
+
+      ctx.fillRect(
+        0,
+        baseGroundY(),
+        W,
+        4
+      );
+
+
       drawOpeningCharacters();
 
+
       return;
     }
 
-    // -------------------------
-    // GAMEPLAY
-    // -------------------------
 
-    if (
-      mode === MODE.CHASE ||
-      mode === MODE.TOGETHER ||
-      mode === MODE.GAME_OVER
+    // ========================================================
+    // GAME
+    // ========================================================
+
+    drawDecorations();
+
+
+    drawPlatforms();
+
+
+    drawHazards();
+
+
+    for (
+      const enemy
+      of enemies
     ) {
-      drawGroundHazards();
 
-      drawEnemies();
-
-      drawIncomingAttacks();
-
-      drawGameplayCharacters();
-
-      drawHeartShots();
-
-      drawParticles();
-
-      return;
+      drawEnemy(
+        enemy
+      );
     }
 
-    // -------------------------
-    // CELEBRATION
-    // -------------------------
+
+    drawIncomingAttacks();
+
+
+    drawGameplayCharacters();
+
+
+    drawHeartShots();
+
+
+    drawParticles();
+
 
     if (
       mode ===
       MODE.CELEBRATION
     ) {
-      drawGameplayCharacters();
 
-      drawParticles();
-
-      drawCelebrationSky();
+      drawCelebrationText();
     }
   }
 
+
   // =========================================================
-  // MOBILE HOLD BUTTONS
+  // MOBILE CONTROLS
   // =========================================================
 
   function bindHold(
     id,
-    property
+    key
   ) {
+
     const button =
       document.getElementById(
         id
       );
 
+
     if (
       !button
     ) {
+
       return;
     }
 
-    const press =
+
+    const down =
       event => {
+
         event.preventDefault();
 
-        keys[property] =
+
+        keys[
+          key
+        ] =
           true;
 
-        button
-          .classList
-          .add(
-            "active"
-          );
+
+        button.classList.add(
+          "active"
+        );
       };
 
-    const release =
+
+    const up =
       event => {
+
         event.preventDefault();
 
-        keys[property] =
+
+        keys[
+          key
+        ] =
           false;
 
-        button
-          .classList
-          .remove(
-            "active"
-          );
+
+        button.classList.remove(
+          "active"
+        );
       };
+
 
     button.addEventListener(
       "pointerdown",
-      press
+      down
     );
+
 
     button.addEventListener(
       "pointerup",
-      release
+      up
     );
+
 
     button.addEventListener(
       "pointercancel",
-      release
+      up
     );
+
 
     button.addEventListener(
       "pointerleave",
-      release
+      up
     );
   }
+
 
   bindHold(
     "leftButton",
     "left"
   );
 
+
   bindHold(
     "rightButton",
     "right"
   );
+
 
   bindHold(
     "runButton",
     "run"
   );
 
-  const jumpButton =
-    document.getElementById(
+
+  document
+    .getElementById(
       "jumpButton"
+    )
+    .addEventListener(
+      "pointerdown",
+      event => {
+
+        event.preventDefault();
+
+
+        jump();
+      }
     );
 
-  const attackButton =
-    document.getElementById(
+
+  document
+    .getElementById(
       "attackButton"
+    )
+    .addEventListener(
+      "pointerdown",
+      event => {
+
+        event.preventDefault();
+
+
+        fireHeart();
+      }
     );
 
-  jumpButton.addEventListener(
-    "pointerdown",
-    event => {
-      event.preventDefault();
-
-      jump();
-    }
-  );
-
-  attackButton.addEventListener(
-    "pointerdown",
-    event => {
-      event.preventDefault();
-
-      fireHeart();
-    }
-  );
 
   // =========================================================
   // KEYBOARD
@@ -5402,6 +6745,7 @@
   window.addEventListener(
     "keydown",
     event => {
+
       if (
         event.key ===
         "ArrowLeft" ||
@@ -5412,9 +6756,11 @@
         event.key ===
         "A"
       ) {
+
         keys.left =
           true;
       }
+
 
       if (
         event.key ===
@@ -5426,17 +6772,21 @@
         event.key ===
         "D"
       ) {
+
         keys.right =
           true;
       }
+
 
       if (
         event.key ===
         "Shift"
       ) {
+
         keys.run =
           true;
       }
+
 
       if (
         !event.repeat &&
@@ -5454,10 +6804,13 @@
           "W"
         )
       ) {
+
         event.preventDefault();
+
 
         jump();
       }
+
 
       if (
         !event.repeat &&
@@ -5475,14 +6828,17 @@
           "F"
         )
       ) {
+
         fireHeart();
       }
     }
   );
 
+
   window.addEventListener(
     "keyup",
     event => {
+
       if (
         event.key ===
         "ArrowLeft" ||
@@ -5493,9 +6849,11 @@
         event.key ===
         "A"
       ) {
+
         keys.left =
           false;
       }
+
 
       if (
         event.key ===
@@ -5507,19 +6865,23 @@
         event.key ===
         "D"
       ) {
+
         keys.right =
           false;
       }
+
 
       if (
         event.key ===
         "Shift"
       ) {
+
         keys.run =
           false;
       }
     }
   );
+
 
   // =========================================================
   // UI BUTTONS
@@ -5527,70 +6889,70 @@
 
   startButton.addEventListener(
     "click",
-    () => {
-      startStory();
-    }
+    startStory
   );
+
 
   restartButton.addEventListener(
     "click",
     () => {
-      if (
-        window.gameAudio
-      ) {
-        gameAudio.play(
-          "ui",
-          0.55
-        );
-      }
+
+      playSound(
+        "ui",
+        0.55
+      );
+
 
       restartGameplay();
     }
   );
 
+
   continueButton.addEventListener(
     "click",
     () => {
-      if (
-        window.gameAudio
-      ) {
-        gameAudio.play(
-          "ui",
-          0.55
-        );
-      }
+
+      playSound(
+        "ui",
+        0.55
+      );
+
 
       continueTogether();
     }
   );
 
+
   closeButton.addEventListener(
     "click",
     () => {
-      if (
-        window.gameAudio
-      ) {
-        gameAudio.play(
-          "ui",
-          0.48
-        );
-      }
+
+      playSound(
+        "ui",
+        0.48
+      );
+
 
       closeStory();
     }
   );
 
+
   soundButton.addEventListener(
     "click",
     () => {
+
       if (
         !window.gameAudio
       ) {
+
         return;
       }
 
+
       const enabled =
         gameAudio.toggle();
+
 
       soundButton.textContent =
         enabled
@@ -5601,6 +6963,7 @@
     }
   );
 
+
   // =========================================================
   // MAIN LOOP
   // =========================================================
@@ -5608,13 +6971,14 @@
   let previous =
     performance.now();
 
+
   function loop(
     now
   ) {
+
     const dt =
       Math.min(
         0.033,
-
         (
           now -
           previous
@@ -5622,21 +6986,27 @@
         1000
       );
 
+
     previous =
       now;
+
 
     update(
       dt
     );
 
+
     render();
+
 
     requestAnimationFrame(
       loop
     );
   }
 
+
   maintainChunks();
+
 
   requestAnimationFrame(
     loop
